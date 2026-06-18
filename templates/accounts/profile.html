@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Profile · Packlist{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>Your profile</h1>
+  <p class="muted">{{ user.email }}</p>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn primary">Save</button>
+  </form>
+</div>
+{% endblock %}

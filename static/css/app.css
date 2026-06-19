@@ -95,3 +95,41 @@ label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
 .status-packing { background: #fff4e0; color: var(--warn); }
 .status-complete { background: #e7f4ec; color: var(--ok); }
 .empty { padding: 1rem 0; }
+
+/* --- planning view: add-item form --- */
+.add-item { margin-bottom: 1rem; }
+.add-item-row { display: flex; gap: 0.5rem; align-items: flex-start; }
+.add-name { position: relative; flex: 1; }
+.add-name input { width: 100%; }
+input.qty { width: 4.5rem; }
+.add-item-row select { width: auto; min-width: 9rem; }
+.field-error { color: #b3261e; font-size: 0.85rem; margin: 0.4rem 0 0; }
+
+/* autocomplete dropdown */
+.suggestions {
+  position: absolute; left: 0; right: 0; top: 100%; z-index: 20;
+  background: #fff; border: 1px solid var(--line); border-radius: 8px;
+  margin-top: 2px; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+}
+.suggestions:empty { display: none; }
+.suggestion {
+  display: block; width: 100%; text-align: left; padding: 0.45rem 0.6rem;
+  background: none; border: none; cursor: pointer; font-size: 0.95rem;
+}
+.suggestion:hover { background: #eef2ff; }
+
+/* --- progress bar --- */
+.progress { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+.progress-track { flex: 1; height: 8px; background: var(--line); border-radius: 999px; overflow: hidden; }
+.progress-track span { display: block; height: 100%; background: var(--primary); transition: width 0.2s ease; }
+.progress-label { white-space: nowrap; }
+
+/* --- category groups & item rows --- */
+.cat-head { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 1.1rem 0 0.4rem; }
+.item-row { gap: 0.5rem; }
+.item-main { flex: 1; }
+.item-actions { display: flex; gap: 0.75rem; }
+.item-edit-form { display: flex; gap: 0.5rem; align-items: center; flex: 1; flex-wrap: wrap; }
+.item-edit-form input[type=text] { flex: 1; min-width: 8rem; }
+.linkbtn.danger { color: #b3261e; }
+.btn.danger { background: #b3261e; color: #fff; border-color: #b3261e; }

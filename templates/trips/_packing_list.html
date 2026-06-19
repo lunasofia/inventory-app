@@ -1,0 +1,17 @@
+<div id="packing-list">
+  <div class="progress">
+    <div class="progress-track"><span style="width: {{ trip.progress_pct }}%"></span></div>
+    <span class="muted progress-label">{{ trip.packed_count }}/{{ trip.total_count }} packed</span>
+  </div>
+
+  {% if groups %}
+    {% for cat_name, items in groups %}
+      <h3 class="cat-head">{{ cat_name }}</h3>
+      <ul class="trip-list">
+        {% for item in items %}{% include 'trips/_item_row.html' %}{% endfor %}
+      </ul>
+    {% endfor %}
+  {% else %}
+    <p class="muted empty">No items yet.{% if can_edit %} Add your first item above.{% endif %}</p>
+  {% endif %}
+</div>

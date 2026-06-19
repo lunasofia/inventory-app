@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   <script src="https://unpkg.com/htmx.org@2.0.3" defer></script>
 </head>
-<body>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
   <header class="topbar">
     <a class="brand" href="{% url 'dashboard' %}">🧳 Packlist</a>
     <nav>

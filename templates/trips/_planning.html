@@ -1,0 +1,28 @@
+<div id="planning">
+  {% if can_edit %}
+    <form id="add-item-form" class="add-item"
+          hx-post="{% url 'item_add' trip.pk %}"
+          hx-target="#planning" hx-swap="outerHTML">
+      <div class="add-item-row">
+        <div class="add-name">
+          <input type="text" name="name" id="id_name" placeholder="Add an item…"
+                 autocomplete="off" value="{{ add_form.name.value|default:'' }}"
+                 hx-get="{% url 'item_suggest' trip.pk %}"
+                 hx-trigger="keyup changed delay:250ms"
+                 hx-target="#item-suggestions" hx-swap="innerHTML">
+          <div id="item-suggestions" class="suggestions"></div>
+        </div>
+        {{ add_form.quantity }}
+        {{ add_form.category }}
+        <button class="btn primary" type="submit">Add</button>
+      </div>
+      {% if add_form.errors %}
+        <p class="field-error">
+          {{ add_form.name.errors.0 }}{{ add_form.quantity.errors.0 }}
+        </p>
+      {% endif %}
+    </form>
+  {% endif %}
+
+  {% include 'trips/_packing_list.html' %}
+</div>

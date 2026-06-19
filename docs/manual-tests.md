@@ -103,9 +103,78 @@ Legend: each case lists **Steps → Expected**. ✅ = pass, mark the date/result
 
 ---
 
+## 10. Packing list — add items (Task 4)
+
+Open the trip detail (planning) page as the owner.
+
+| # | Steps | Expected |
+|---|-------|----------|
+| 10.1 | Type "Wool socks", quantity 3, category "Clothing", Add | Appears under "Clothing" as "3× Wool socks" with no full-page reload (HTMX) |
+| 10.2 | After an add | Add field clears and refocuses for the next entry |
+| 10.3 | Add with quantity blank | Defaults to 1 |
+| 10.4 | Add with no category | Appears under an "Uncategorized" group |
+| 10.5 | Submit empty name | Not added; "This field is required." shown; no blank row |
+| 10.6 | Add with quantity 0 | Rejected: "Quantity must be at least 1." |
+| 10.7 | Add the same name twice | Both lines allowed (duplicates permitted; no auto-merge) |
+| 10.8 | Watch the packed/total count | Updates to reflect the new total |
+
+## 11. Hybrid catalog & autocomplete (Task 4)
+
+| # | Steps | Expected |
+|---|-------|----------|
+| 11.1 | Add a brand-new item | A `catalog.Item` is created for the acting user (verify in `/admin/`) |
+| 11.2 | Add a name matching an existing catalog item, any casing ("wool socks") | No duplicate catalog item; existing reused; its `times_used` increments |
+| 11.3 | On a new trip, type "wo" after "Wool socks" is in the catalog | Suggestion dropdown lists matches, ranked by `times_used` |
+| 11.4 | Click a suggestion | Name fills in; its category pre-fills if set |
+| 11.5 | Type a name with no matches | No suggestions; can still add |
+| 11.6 | A different user | Does not see this user's catalog suggestions |
+
+## 12. Edit & remove items (Task 4)
+
+| # | Steps | Expected |
+|---|-------|----------|
+| 12.1 | Click Edit, change quantity + category, Save | Row updates in place; moves to the new category group; counts update |
+| 12.2 | Edit name to empty, Save | Validation error; original retained |
+| 12.3 | Cancel an inline edit | Reverts to display unchanged |
+| 12.4 | Remove an item | Disappears via HTMX; counts update |
+| 12.5 | Remove the last item in a category | The empty category heading disappears |
+| 12.6 | Remove the last item on the trip | "No items yet" empty state returns |
+| 12.7 | After removing a packing line | The underlying catalog Item still exists (catalog is preserved) |
+
+## 13. Grouping & ordering (Task 4)
+
+| # | Steps | Expected |
+|---|-------|----------|
+| 13.1 | Add items across multiple categories | Grouped under category headings, not a flat list |
+| 13.2 | Heading order | **Alphabetical** by category name |
+| 13.3 | Categories with no items on this trip | Show no heading |
+| 13.4 | Uncategorized items | Grouped under a single "Uncategorized" heading, shown **last** |
+| 13.5 | Reload the page | Items persist in the same groups/order |
+| 13.6 | Items within a group | Ordered by `sort_order` then name |
+
+## 14. Planning view — access control (Task 4)
+
+| # | Steps | Expected |
+|---|-------|----------|
+| 14.1 | Owner opens planning view | Add/edit/remove controls visible and functional |
+| 14.2 | View-only shared user opens the trip | Item list visible; **no add form / edit / remove controls** |
+| 14.3 | View-only user POSTs directly to add/edit/delete endpoints | Rejected (404) |
+| 14.4 | Edit-share user | Can add/edit/remove |
+
+---
+
+## Resolved design decisions (Task 4)
+
+- **Duplicate names on a trip:** allowed (separate lines, no auto-merge).
+- **Catalog ownership & category dropdown on shared trips:** the **acting
+  user's** catalog and categories (their own memory), not the trip owner's.
+- **Catalog matching:** case-insensitive (`name__iexact`).
+
 ## Coverage notes
 
-- **Not yet covered (future tasks):** packing-list item add/edit/remove and
-  catalog autocomplete (Task 4); check-off packing mode (Task 5); templates
-  (Task 6); unpacking mode (Task 7); sharing UI (Task 8).
+- **Covered through Task 4:** auth, profiles, dashboard, trip CRUD, and the
+  packing-list planning view (add/edit/remove, hybrid catalog, autocomplete,
+  grouping, access control).
+- **Not yet covered (future tasks):** check-off packing mode (Task 5);
+  templates (Task 6); unpacking mode (Task 7); sharing UI (Task 8).
 - Update this file as each task lands so the checklist stays in sync.

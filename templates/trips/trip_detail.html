@@ -35,19 +35,28 @@
 
 <section>
   <h2>Packing list</h2>
-  <div class="card">
-    {% if items %}
-      <ul class="trip-list">
-        {% for item in items %}
-          <li class="trip-card">
-            <span>{{ item.quantity }}× {{ item.name }}</span>
-            {% if item.category %}<span class="muted">{{ item.category.name }}</span>{% endif %}
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p class="muted empty">No items yet. Adding items to the packing list is the next build step.</p>
-    {% endif %}
-  </div>
+  {% include 'trips/_planning.html' %}
 </section>
+
+{% if can_edit %}
+<script>
+  // Fill the add-item form from a chosen autocomplete suggestion.
+  function pickSuggestion(el) {
+    var form = document.getElementById('add-item-form');
+    if (!form) return;
+    form.querySelector('[name=name]').value = el.dataset.name;
+    var cat = form.querySelector('[name=category]');
+    if (cat) cat.value = el.dataset.category || '';
+    document.getElementById('item-suggestions').innerHTML = '';
+    form.querySelector('[name=name]').focus();
+  }
+  // After the planning region swaps in, refocus the add-item field.
+  document.body.addEventListener('htmx:afterSwap', function (e) {
+    if (e.target && e.target.id === 'planning') {
+      var name = document.querySelector('#add-item-form [name=name]');
+      if (name) name.focus();
+    }
+  });
+</script>
+{% endif %}
 {% endblock %}

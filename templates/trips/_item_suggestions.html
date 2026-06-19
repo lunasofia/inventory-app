@@ -1,0 +1,7 @@
+{% for s in suggestions %}
+  <button type="button" class="suggestion"
+          data-name="{{ s.name }}" data-category="{{ s.category_id|default:'' }}"
+          onclick="pickSuggestion(this)">
+    {{ s.name }}{% if s.category %} <span class="muted">· {{ s.category.name }}</span>{% endif %}
+  </button>
+{% endfor %}

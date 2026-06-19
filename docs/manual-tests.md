@@ -1,8 +1,13 @@
 # Manual Test Plan
 
 Manual regression checklist for Packlist. Re-run the relevant section after
-changes to avoid regressions. Covers functionality through **Task 3** (auth,
-profiles, dashboard, trip CRUD).
+changes to avoid regressions.
+
+> Most of this checklist is now also covered by the **automated suite** (`make
+> test` / `pytest`, run in CI on every push) — see `tests/`. This manual plan
+> remains useful for **visual/exploratory** checks and the JavaScript-driven
+> interactions (autocomplete picking, inline-edit swaps) that the HTTP-level
+> tests don't exercise.
 
 ## Setup
 

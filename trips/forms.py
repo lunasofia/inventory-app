@@ -38,6 +38,8 @@ class PackingItemForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['category'].required = False
         self.fields['category'].empty_label = 'Uncategorized'
+        # A blank quantity defaults to 1 (see clean_quantity).
+        self.fields['quantity'].required = False
         if owner is not None:
             self.fields['category'].queryset = Category.objects.filter(owner=owner)
 
@@ -48,7 +50,9 @@ class PackingItemForm(forms.ModelForm):
         return name
 
     def clean_quantity(self):
-        qty = self.cleaned_data['quantity']
-        if qty is None or qty < 1:
+        qty = self.cleaned_data.get('quantity')
+        if qty is None:
+            return 1  # blank defaults to 1
+        if qty < 1:
             raise forms.ValidationError('Quantity must be at least 1.')
         return qty

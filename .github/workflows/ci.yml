@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      # DEBUG=True selects the dev static-files backend so template rendering in
+      # tests doesn't require a collectstatic manifest. Django forces DEBUG off
+      # at test runtime regardless, so app behavior under test is unaffected.
+      DEBUG: 'True'
+      SECRET_KEY: 'ci-only-secret-not-for-production'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: System check
+        run: python manage.py check
+      - name: Run tests
+        run: pytest

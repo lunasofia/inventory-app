@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}{{ trip.name }} · Packlist{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ trip.name }}</h1>
+    <p class="muted">
+      {% if trip.destination %}{{ trip.destination }} · {% endif %}
+      <span class="status status-{{ trip.status }}">{{ trip.get_status_display }}</span>
+      {% if permission != 'owner' %}<span class="tag">shared · {{ permission }}</span>{% endif %}
+    </p>
+  </div>
+  {% if can_edit %}
+    <div class="form-actions">
+      <a class="btn" href="{% url 'trip_edit' trip.pk %}">Edit</a>
+      {% if permission == 'owner' %}
+        <a class="btn" href="{% url 'trip_delete' trip.pk %}">Delete</a>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <dl class="meta-grid">
+    <dt>Dates</dt>
+    <dd>{% if trip.start_date %}{{ trip.start_date }} → {{ trip.end_date|default:"?" }}{% else %}<span class="muted">Not set</span>{% endif %}</dd>
+    <dt>Owner</dt>
+    <dd>{{ trip.owner.short_name }}</dd>
+    {% if trip.notes %}
+      <dt>Notes</dt>
+      <dd>{{ trip.notes|linebreaksbr }}</dd>
+    {% endif %}
+  </dl>
+</div>
+
+<section>
+  <h2>Packing list</h2>
+  <div class="card">
+    {% if items %}
+      <ul class="trip-list">
+        {% for item in items %}
+          <li class="trip-card">
+            <span>{{ item.quantity }}× {{ item.name }}</span>
+            {% if item.category %}<span class="muted">{{ item.category.name }}</span>{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted empty">No items yet. Adding items to the packing list is the next build step.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

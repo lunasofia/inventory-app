@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}{% if mode == 'edit' %}Edit trip{% else %}New trip{% endif %} · Packlist{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>{% if mode == 'edit' %}Edit trip{% else %}New trip{% endif %}</h1>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {{ form.as_p }}
+    <div class="form-actions">
+      <button type="submit" class="btn primary">{% if mode == 'edit' %}Save changes{% else %}Create trip{% endif %}</button>
+      {% if mode == 'edit' %}
+        <a class="btn" href="{% url 'trip_detail' trip.pk %}">Cancel</a>
+      {% else %}
+        <a class="btn" href="{% url 'dashboard' %}">Cancel</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+{% endblock %}

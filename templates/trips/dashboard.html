@@ -3,8 +3,7 @@
 {% block content %}
 <div class="page-head">
   <h1>Your trips</h1>
-  {# "New trip" wires up once trip CRUD lands (task #3) #}
-  <span class="btn primary disabled" aria-disabled="true">+ New trip</span>
+  <a class="btn primary" href="{% url 'trip_create' %}">+ New trip</a>
 </div>
 
 <section>
@@ -13,11 +12,11 @@
     <ul class="trip-list">
       {% for trip in active_trips %}
         <li class="trip-card">
-          <div class="trip-main">
+          <a class="trip-main" href="{% url 'trip_detail' trip.pk %}">
             <strong>{{ trip.name }}</strong>
             {% if trip.destination %}<span class="muted">· {{ trip.destination }}</span>{% endif %}
             {% if trip.owner != user %}<span class="tag">shared</span>{% endif %}
-          </div>
+          </a>
           <div class="trip-meta">
             <span class="status status-{{ trip.status }}">{{ trip.get_status_display }}</span>
             <span class="muted">{{ trip.packed_count }}/{{ trip.total_count }} packed</span>
@@ -36,7 +35,7 @@
   <ul class="trip-list">
     {% for trip in complete_trips %}
       <li class="trip-card done">
-        <div class="trip-main"><strong>{{ trip.name }}</strong></div>
+        <a class="trip-main" href="{% url 'trip_detail' trip.pk %}"><strong>{{ trip.name }}</strong></a>
         <span class="status status-complete">Complete</span>
       </li>
     {% endfor %}

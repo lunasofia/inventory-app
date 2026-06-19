@@ -1,0 +1,12 @@
+<span class="bag-chip" id="bag-chip-{{ bag.pk }}">
+  <span class="bag-chip-name">{{ bag.name }}</span>
+  {% if can_edit %}
+    <button class="linkbtn" type="button" title="Rename"
+            hx-get="{% url 'bag_edit' trip.pk bag.pk %}"
+            hx-target="#bag-chip-{{ bag.pk }}" hx-swap="outerHTML">✎</button>
+    <button class="linkbtn danger" type="button" title="Delete"
+            hx-post="{% url 'bag_delete' trip.pk bag.pk %}"
+            hx-target="#planning" hx-swap="outerHTML"
+            hx-confirm="Delete &quot;{{ bag.name }}&quot;? Its items become Unbagged.">✕</button>
+  {% endif %}
+</span>

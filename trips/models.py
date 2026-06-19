@@ -64,10 +64,45 @@ class Trip(models.Model):
         return round(100 * self.packed_count / total) if total else 0
 
 
+class Bag(models.Model):
+    """A per-trip named container (e.g. "Blue duffel"). Items are assigned to a
+    bag; deleting a bag leaves its items intact (they become Unbagged)."""
+
+    trip = models.ForeignKey(Trip, on_delete=models.CASCADE, related_name='bags')
+    name = models.CharField(max_length=80)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+        constraints = [
+            models.UniqueConstraint(fields=['trip', 'name'], name='unique_bag_name_per_trip')
+        ]
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def total_count(self):
+        return self.items.count()
+
+    @property
+    def packed_count(self):
+        return self.items.filter(packed=True).count()
+
+    @property
+    def is_packed(self):
+        """A bag shows as packed when it has items and all of them are packed."""
+        total = self.total_count
+        return total > 0 and self.packed_count == total
+
+
 class PackingItem(models.Model):
     """A single line on a trip's packing list."""
 
     trip = models.ForeignKey(Trip, on_delete=models.CASCADE, related_name='items')
+    bag = models.ForeignKey(
+        Bag, on_delete=models.SET_NULL, null=True, blank=True, related_name='items'
+    )
     catalog_item = models.ForeignKey(
         'catalog.Item', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='packing_items',

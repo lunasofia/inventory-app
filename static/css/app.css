@@ -133,3 +133,37 @@ input.qty { width: 4.5rem; }
 .item-edit-form input[type=text] { flex: 1; min-width: 8rem; }
 .linkbtn.danger { color: #b3261e; }
 .btn.danger { background: #b3261e; color: #fff; border-color: #b3261e; }
+
+/* --- bags bar --- */
+.bags-bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem;
+  padding: 0.6rem 0.75rem; margin-bottom: 1rem;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+}
+.group-toggle { display: flex; align-items: center; gap: 0.3rem; }
+.toggle-btn {
+  border: 1px solid var(--line); background: #fff; color: var(--ink);
+  padding: 0.2rem 0.6rem; border-radius: 999px; cursor: pointer; font-size: 0.85rem;
+}
+.toggle-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.bags-list { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+.bag-chip {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  background: #eef2ff; border: 1px solid #d6e0ff; border-radius: 999px;
+  padding: 0.2rem 0.6rem; font-size: 0.85rem;
+}
+.bag-chip.editing { background: #fff; }
+.bag-chip .linkbtn { font-size: 0.85rem; line-height: 1; }
+.bag-edit-form { display: inline-flex; align-items: center; gap: 0.3rem; }
+.bag-edit-form input { width: 8rem; padding: 0.15rem 0.4rem; }
+.add-bag-form { display: inline-flex; align-items: center; gap: 0.3rem; }
+.add-bag-form input { width: 8rem; padding: 0.2rem 0.5rem; }
+
+/* bag heading status + per-item bag tag */
+.cat-head { display: flex; align-items: center; justify-content: space-between; }
+.bag-status { display: inline-flex; align-items: center; gap: 0.6rem; text-transform: none; letter-spacing: 0; }
+.bag-tag {
+  font-size: 0.7rem; background: #eef2ff; color: var(--primary);
+  padding: 0.05rem 0.4rem; border-radius: 6px; margin-left: 0.4rem;
+}
+.packed-dot { color: var(--ok); font-weight: 700; margin-right: 0.2rem; }

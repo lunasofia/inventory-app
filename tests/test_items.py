@@ -77,7 +77,7 @@ def test_grouping_alphabetical_with_uncategorized_last(user, trip):
     PackingItem.objects.create(trip=trip, name='Socks', category=user.categories.get(name='Clothing'))
     PackingItem.objects.create(trip=trip, name='Passport', category=user.categories.get(name='Documents'))
     groups = _grouped_items(trip)
-    headings = [name for name, _ in groups]
+    headings = [heading for heading, _bag, _items in groups]
     assert headings == ['Clothing', 'Documents', 'Uncategorized']
 
 

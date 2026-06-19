@@ -1,0 +1,24 @@
+<div class="bags-bar">
+  <div class="group-toggle">
+    <span class="muted">Group by:</span>
+    <button class="toggle-btn {% if group_mode != 'bag' %}active{% endif %}"
+            hx-get="{% url 'set_group' trip.pk %}?mode=category"
+            hx-target="#planning" hx-swap="outerHTML">Category</button>
+    <button class="toggle-btn {% if group_mode == 'bag' %}active{% endif %}"
+            hx-get="{% url 'set_group' trip.pk %}?mode=bag"
+            hx-target="#planning" hx-swap="outerHTML">Bag</button>
+  </div>
+
+  <div class="bags-list">
+    {% for bag in bags %}{% include 'trips/_bag_chip.html' %}{% endfor %}
+    {% if can_edit %}
+      <form class="add-bag-form" hx-post="{% url 'bag_create' trip.pk %}"
+            hx-target="#planning" hx-swap="outerHTML">
+        {{ bag_form.name }}
+        <button class="btn" type="submit">+ Bag</button>
+      </form>
+    {% endif %}
+  </div>
+
+  {% if bag_form.errors %}<p class="field-error">{{ bag_form.name.errors.0 }}</p>{% endif %}
+</div>

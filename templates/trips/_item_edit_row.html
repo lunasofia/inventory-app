@@ -5,6 +5,7 @@
     {{ form.name }}
     {{ form.quantity }}
     {{ form.category }}
+    {{ form.bag }}
     <button class="btn primary" type="submit">Save</button>
     <button class="btn" type="button"
             hx-get="{% url 'item_row' trip.pk item.pk %}"

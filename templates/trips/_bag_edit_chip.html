@@ -1,0 +1,11 @@
+<span class="bag-chip editing" id="bag-chip-{{ bag.pk }}">
+  <form class="bag-edit-form" hx-post="{% url 'bag_edit' trip.pk bag.pk %}"
+        hx-target="#planning" hx-swap="outerHTML">
+    {{ form.name }}
+    <button class="linkbtn" type="submit" title="Save">✓</button>
+    <button class="linkbtn" type="button" title="Cancel"
+            hx-get="{% url 'bag_chip' trip.pk bag.pk %}"
+            hx-target="#bag-chip-{{ bag.pk }}" hx-swap="outerHTML">✕</button>
+  </form>
+  {% if form.errors %}<span class="field-error">{{ form.name.errors.0 }}</span>{% endif %}
+</span>

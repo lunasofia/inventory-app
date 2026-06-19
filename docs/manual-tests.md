@@ -175,11 +175,44 @@ Open the trip detail (planning) page as the owner.
   user's** catalog and categories (their own memory), not the trip owner's.
 - **Catalog matching:** case-insensitive (`name__iexact`).
 
+## 15. Bags / containers (Task #12)
+
+Open a trip's planning page. A **bag** is a per-trip named container; items can
+be assigned to one; the list can be grouped by bag or category.
+
+| # | Steps | Expected |
+|---|-------|----------|
+| 15.1 | Add a bag "Blue duffel" via the bags bar | Bag chip appears |
+| 15.2 | Add a bag with the same name (any casing) | Rejected: "You already have a bag with that name." |
+| 15.3 | Add a bag with an empty name | Rejected (required); no bag created |
+| 15.4 | Rename "Blue duffel" → "Black roller" | Name changes; items in it untouched |
+| 15.5 | Delete a bag that has items | Bag gone; its items become Unbagged (not deleted) |
+| 15.6 | Add an item and assign it to a bag | Item shows the bag tag; under that bag in bag view |
+| 15.7 | Edit an item and change its bag | Item moves to the new bag |
+| 15.8 | Toggle "Group by: Bag" | Headings become bag names, alphabetical; Unbagged last; empty bags show no heading |
+| 15.9 | Toggle "Group by: Category" | Returns to category grouping |
+| 15.10 | "Mark packed" on a bag heading (bag view) | Every item in the bag becomes packed in one tap; progress jumps; bag offers "Mark unpacked" |
+| 15.11 | "Mark unpacked" on a packed bag | Its items become unpacked; progress drops |
+| 15.12 | Pack each item in a bag individually until all packed | Bag automatically reads as packed (status derived from items) |
+| 15.13 | Reload the page | Bags, assignments, and grouping default (category) persist; statuses persist |
+| 15.14 | View-only shared user | Sees bags + can toggle lens; no add/rename/delete/assign/mark controls; direct POSTs → 404 |
+
+## Resolved design decisions (Bags)
+
+- **Per-trip bags** (no reusable "bags I own" library yet; reuse comes via
+  templates). No logical/physical split — a bag is just a named container.
+- **"Swap the bag"** = rename a bag (contents stay) and/or move items between bags.
+- **Bag-level status is a bulk shortcut over items** — "mark bag packed" sets
+  every item packed; a bag *displays* packed when it has items and all are packed.
+- **Bag vs category are two grouping lenses**; lens defaults to category on each
+  full page load (not yet remembered across visits). Unbagged group shown last.
+- Bag names are **unique (case-insensitive) per trip**.
+
 ## Coverage notes
 
-- **Covered through Task 4:** auth, profiles, dashboard, trip CRUD, and the
-  packing-list planning view (add/edit/remove, hybrid catalog, autocomplete,
-  grouping, access control).
-- **Not yet covered (future tasks):** check-off packing mode (Task 5);
-  templates (Task 6); unpacking mode (Task 7); sharing UI (Task 8).
+- **Covered through Task #12:** auth, profiles, dashboard, trip CRUD, the
+  packing-list planning view, and bags/containers.
+- **Not yet covered (future tasks):** check-off packing mode (Task 5, now
+  bag-aware); templates (Task 6); unpacking mode (Task 7); sharing UI (Task 8);
+  exit page (#13); people (#14); buy-when-there (#15).
 - Update this file as each task lands so the checklist stays in sync.

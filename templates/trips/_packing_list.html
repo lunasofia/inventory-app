@@ -5,11 +5,31 @@
   </div>
 
   {% if groups %}
-    {% for cat_name, items in groups %}
-      <h3 class="cat-head">{{ cat_name }}</h3>
-      <ul class="trip-list">
-        {% for item in items %}{% include 'trips/_item_row.html' %}{% endfor %}
-      </ul>
+    {% for heading, bag, items in groups %}
+      <div class="group">
+        <h3 class="cat-head">
+          <span>{{ heading }}</span>
+          {% if bag %}
+            <span class="bag-status">
+              <span class="muted">{{ bag.packed_count }}/{{ bag.total_count }} packed</span>
+              {% if can_edit %}
+                {% if bag.is_packed %}
+                  <button class="linkbtn" type="button"
+                          hx-post="{% url 'bag_mark' trip.pk bag.pk %}" hx-vals='{"packed": "false"}'
+                          hx-target="#planning" hx-swap="outerHTML">Mark unpacked</button>
+                {% else %}
+                  <button class="linkbtn" type="button"
+                          hx-post="{% url 'bag_mark' trip.pk bag.pk %}" hx-vals='{"packed": "true"}'
+                          hx-target="#planning" hx-swap="outerHTML">Mark packed</button>
+                {% endif %}
+              {% endif %}
+            </span>
+          {% endif %}
+        </h3>
+        <ul class="trip-list">
+          {% for item in items %}{% include 'trips/_item_row.html' %}{% endfor %}
+        </ul>
+      </div>
     {% endfor %}
   {% else %}
     <p class="muted empty">No items yet.{% if can_edit %} Add your first item above.{% endif %}</p>

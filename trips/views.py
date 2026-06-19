@@ -7,8 +7,15 @@ from django.views.decorators.http import require_POST
 
 from catalog.models import Condition, Item
 
-from .forms import PackingItemForm, TripForm
-from .models import PackingItem, Trip
+from .forms import BagForm, PackingItemForm, TripForm
+from .models import Bag, PackingItem, Trip
+
+
+def _group_mode(request, trip):
+    """Current grouping lens for a trip ('category' or 'bag'), kept in session
+    during a visit. trip_detail resets it to 'category' on each full load."""
+    mode = request.session.get(f'group_mode_{trip.pk}', 'category')
+    return mode if mode in ('category', 'bag') else 'category'
 
 
 def _get_trip_or_404(user, pk, *, require_edit=False):
@@ -22,17 +29,33 @@ def _get_trip_or_404(user, pk, *, require_edit=False):
     return trip, permission
 
 
-def _grouped_items(trip):
-    """Items grouped by category for display: named categories alphabetically,
-    then an 'Uncategorized' group last."""
-    groups = {}
-    for item in trip.items.select_related('category', 'condition'):
-        key = item.category.name if item.category else None
-        groups.setdefault(key, []).append(item)
-    named = sorted((k for k in groups if k is not None), key=str.lower)
-    result = [(name, groups[name]) for name in named]
-    if None in groups:
-        result.append(('Uncategorized', groups[None]))
+def _grouped_items(trip, mode='category'):
+    """Items grouped for display as a list of (heading, bag_or_none, items).
+
+    Named groups sort alphabetically; the catch-all ('Uncategorized' / 'Unbagged')
+    comes last. In 'bag' mode the bag object is included so the template can show
+    bag-level controls; in 'category' mode the bag slot is None.
+    """
+    items = list(trip.items.select_related('category', 'condition', 'bag'))
+    if mode == 'bag':
+        bags = {b.id: b for b in trip.bags.all()}
+        buckets = {}
+        for item in items:
+            buckets.setdefault(item.bag_id, []).append(item)
+        named = sorted((bid for bid in buckets if bid is not None),
+                       key=lambda bid: bags[bid].name.lower())
+        result = [(bags[bid].name, bags[bid], buckets[bid]) for bid in named]
+        if None in buckets:
+            result.append(('Unbagged', None, buckets[None]))
+        return result
+    # category mode
+    buckets = {}
+    for item in items:
+        buckets.setdefault(item.category.name if item.category else None, []).append(item)
+    named = sorted((k for k in buckets if k is not None), key=str.lower)
+    result = [(name, None, buckets[name]) for name in named]
+    if None in buckets:
+        result.append(('Uncategorized', None, buckets[None]))
     return result
 
 
@@ -87,6 +110,8 @@ def trip_create(request):
 @login_required
 def trip_detail(request, pk):
     trip, permission = _get_trip_or_404(request.user, pk)
+    # Default the grouping lens to category on each full page load.
+    request.session[f'group_mode_{trip.pk}'] = 'category'
     context = _planning_context(request, trip, permission)
     return render(request, 'trips/trip_detail.html', context)
 
@@ -119,27 +144,41 @@ def trip_delete(request, pk):
 
 # --- packing-list items (planning view) ------------------------------------
 
-def _planning_context(request, trip, permission, add_form=None):
+def _planning_context(request, trip, permission, add_form=None, bag_form=None):
+    mode = _group_mode(request, trip)
     return {
         'trip': trip,
         'permission': permission,
         'can_edit': permission in ('owner', 'edit'),
-        'groups': _grouped_items(trip),
-        'add_form': add_form if add_form is not None else PackingItemForm(owner=request.user),
+        'group_mode': mode,
+        'groups': _grouped_items(trip, mode),
+        'bags': trip.bags.all(),
+        'add_form': add_form if add_form is not None
+        else PackingItemForm(owner=request.user, trip=trip),
+        'bag_form': bag_form if bag_form is not None else BagForm(trip=trip),
     }
 
 
-def _render_planning(request, trip, permission, add_form=None, status=200):
-    """Render the swappable #planning region (add form + grouped list)."""
-    context = _planning_context(request, trip, permission, add_form)
+def _render_planning(request, trip, permission, add_form=None, bag_form=None, status=200):
+    """Render the swappable #planning region (bags bar + add form + grouped list)."""
+    context = _planning_context(request, trip, permission, add_form, bag_form)
     return render(request, 'trips/_planning.html', context, status=status)
+
+
+@login_required
+def set_group(request, pk):
+    """Toggle the grouping lens (category vs bag) for the current visit."""
+    trip, permission = _get_trip_or_404(request.user, pk)
+    mode = request.GET.get('mode', 'category')
+    request.session[f'group_mode_{trip.pk}'] = mode if mode in ('category', 'bag') else 'category'
+    return _render_planning(request, trip, permission)
 
 
 @login_required
 @require_POST
 def item_add(request, pk):
     trip, permission = _get_trip_or_404(request.user, pk, require_edit=True)
-    form = PackingItemForm(request.POST, owner=request.user)
+    form = PackingItemForm(request.POST, owner=request.user, trip=trip)
     if form.is_valid():
         item = form.save(commit=False)
         item.trip = trip
@@ -157,7 +196,7 @@ def item_edit(request, pk, item_pk):
     trip, permission = _get_trip_or_404(request.user, pk, require_edit=True)
     item = get_object_or_404(PackingItem, pk=item_pk, trip=trip)
     if request.method == 'POST':
-        form = PackingItemForm(request.POST, instance=item, owner=request.user)
+        form = PackingItemForm(request.POST, instance=item, owner=request.user, trip=trip)
         if form.is_valid():
             updated = form.save(commit=False)
             updated.catalog_item = _remember_item(request.user, updated.name, updated.category)
@@ -165,8 +204,68 @@ def item_edit(request, pk, item_pk):
             return _render_planning(request, trip, permission)
         return render(request, 'trips/_item_edit_row.html',
                       {'trip': trip, 'item': item, 'form': form})
-    form = PackingItemForm(instance=item, owner=request.user)
+    form = PackingItemForm(instance=item, owner=request.user, trip=trip)
     return render(request, 'trips/_item_edit_row.html', {'trip': trip, 'item': item, 'form': form})
+
+
+# --- bags --------------------------------------------------------------------
+
+@login_required
+@require_POST
+def bag_create(request, pk):
+    trip, permission = _get_trip_or_404(request.user, pk, require_edit=True)
+    form = BagForm(request.POST, trip=trip)
+    if form.is_valid():
+        bag = form.save(commit=False)
+        bag.trip = trip
+        bag.save()
+        return _render_planning(request, trip, permission)
+    # Invalid: re-render with the bag form's error.
+    return _render_planning(request, trip, permission, bag_form=form)
+
+
+@login_required
+def bag_edit(request, pk, bag_pk):
+    """GET returns an inline rename form; POST saves it."""
+    trip, permission = _get_trip_or_404(request.user, pk, require_edit=True)
+    bag = get_object_or_404(Bag, pk=bag_pk, trip=trip)
+    if request.method == 'POST':
+        form = BagForm(request.POST, instance=bag, trip=trip)
+        if form.is_valid():
+            form.save()
+            return _render_planning(request, trip, permission)
+        return _render_planning(request, trip, permission, bag_form=form)
+    form = BagForm(instance=bag, trip=trip)
+    return render(request, 'trips/_bag_edit_chip.html', {'trip': trip, 'bag': bag, 'form': form})
+
+
+@login_required
+def bag_chip(request, pk, bag_pk):
+    """Return a single bag's display chip (used to cancel an inline rename)."""
+    trip, permission = _get_trip_or_404(request.user, pk)
+    bag = get_object_or_404(Bag, pk=bag_pk, trip=trip)
+    return render(request, 'trips/_bag_chip.html',
+                  {'trip': trip, 'bag': bag, 'can_edit': permission in ('owner', 'edit')})
+
+
+@login_required
+@require_POST
+def bag_delete(request, pk, bag_pk):
+    trip, permission = _get_trip_or_404(request.user, pk, require_edit=True)
+    bag = get_object_or_404(Bag, pk=bag_pk, trip=trip)
+    bag.delete()  # items survive (FK set null) -> become Unbagged
+    return _render_planning(request, trip, permission)
+
+
+@login_required
+@require_POST
+def bag_mark(request, pk, bag_pk):
+    """Coarse done-stamp: set every item in the bag packed/unpacked at once."""
+    trip, permission = _get_trip_or_404(request.user, pk, require_edit=True)
+    bag = get_object_or_404(Bag, pk=bag_pk, trip=trip)
+    packed = request.POST.get('packed') == 'true'
+    bag.items.update(packed=packed)
+    return _render_planning(request, trip, permission)
 
 
 @login_required

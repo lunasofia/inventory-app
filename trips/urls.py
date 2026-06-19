@@ -14,4 +14,11 @@ urlpatterns = [
     path('trips/<int:pk>/items/<int:item_pk>/', views.item_row, name='item_row'),
     path('trips/<int:pk>/items/<int:item_pk>/edit/', views.item_edit, name='item_edit'),
     path('trips/<int:pk>/items/<int:item_pk>/delete/', views.item_delete, name='item_delete'),
+    # Grouping lens + bags (HTMX)
+    path('trips/<int:pk>/group/', views.set_group, name='set_group'),
+    path('trips/<int:pk>/bags/add/', views.bag_create, name='bag_create'),
+    path('trips/<int:pk>/bags/<int:bag_pk>/', views.bag_chip, name='bag_chip'),
+    path('trips/<int:pk>/bags/<int:bag_pk>/edit/', views.bag_edit, name='bag_edit'),
+    path('trips/<int:pk>/bags/<int:bag_pk>/delete/', views.bag_delete, name='bag_delete'),
+    path('trips/<int:pk>/bags/<int:bag_pk>/mark/', views.bag_mark, name='bag_mark'),
 ]

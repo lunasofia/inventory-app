@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Packing: {{ trip.name }} · Packlist{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Packing: {{ trip.name }}</h1>
+    <p class="muted">
+      Check things off as you pack.
+      {% if permission != 'owner' %}<span class="tag">shared · {{ permission }}</span>{% endif %}
+    </p>
+  </div>
+  <a class="btn" href="{% url 'trip_detail' trip.pk %}">Edit list</a>
+</div>
+
+{% include 'trips/_packing_mode_list.html' %}
+{% endblock %}

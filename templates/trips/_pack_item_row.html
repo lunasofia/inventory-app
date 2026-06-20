@@ -1,0 +1,15 @@
+<li class="pack-row {% if item.packed %}packed{% endif %}" id="pack-item-{{ item.pk }}">
+  {% if can_edit %}
+    <button type="button" class="pack-check"
+            hx-post="{% url 'pack_toggle' trip.pk item.pk %}"
+            hx-target="#pack-list" hx-swap="outerHTML">
+      <span class="check-box">{% if item.packed %}✓{% endif %}</span>
+      <span class="pack-label">{{ item.quantity }}× {{ item.name }}{% if item.bag %} <span class="bag-tag">{{ item.bag.name }}</span>{% endif %}</span>
+    </button>
+  {% else %}
+    <span class="pack-check readonly">
+      <span class="check-box">{% if item.packed %}✓{% endif %}</span>
+      <span class="pack-label">{{ item.quantity }}× {{ item.name }}{% if item.bag %} <span class="bag-tag">{{ item.bag.name }}</span>{% endif %}</span>
+    </span>
+  {% endif %}
+</li>

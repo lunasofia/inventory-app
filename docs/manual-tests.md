@@ -197,6 +197,27 @@ be assigned to one; the list can be grouped by bag or category.
 | 15.13 | Reload the page | Bags, assignments, and grouping default (category) persist; statuses persist |
 | 15.14 | View-only shared user | Sees bags + can toggle lens; no add/rename/delete/assign/mark controls; direct POSTs → 404 |
 
+## 16. Check-off packing mode (Task #5)
+
+A focused page at `/trips/<pk>/pack/`, reached via "🎒 Packing mode" on the
+trip page. Check-off only (editing stays on the planning view).
+
+| # | Steps | Expected |
+|---|-------|----------|
+| 16.1 | Click "Packing mode" on a trip | Focused packing page loads; item list with check controls + progress; no add/edit controls |
+| 16.2 | "Edit list" link | Returns to the planning view |
+| 16.3 | Tap an unpacked item | Becomes packed (checked, dimmed, struck through) without full reload |
+| 16.4 | Tap a packed item | Toggles back to unpacked |
+| 16.5 | Packed item position | Stays in place in its group |
+| 16.6 | Check items off | Overall progress bar + "N/total packed" update live; per-group counts update |
+| 16.7 | Check the last remaining item | Progress hits 100%; "All packed" message shown |
+| 16.8 | Uncheck from 100% | Message clears; progress drops |
+| 16.9 | Toggle "Group by: Bag" | Regroups by bag (alphabetical, Unbagged last); check states unchanged |
+| 16.10 | "Pack all" on a bag heading (bag view) | All items in the bag check off; progress jumps; offers "Unpack all" |
+| 16.11 | Open packing mode for a trip with no items | Friendly empty state linking back to add items |
+| 16.12 | View-only shared user | Sees list + progress read-only; no check controls; direct POST to toggle/bag-mark → 404 |
+| 16.13 | Reload after checking items; also view planning page | Packed states persist and are reflected on the planning view (shared field) |
+
 ## Resolved design decisions (Bags)
 
 - **Per-trip bags** (no reusable "bags I own" library yet; reuse comes via
@@ -210,9 +231,9 @@ be assigned to one; the list can be grouped by bag or category.
 
 ## Coverage notes
 
-- **Covered through Task #12:** auth, profiles, dashboard, trip CRUD, the
-  packing-list planning view, and bags/containers.
-- **Not yet covered (future tasks):** check-off packing mode (Task 5, now
-  bag-aware); templates (Task 6); unpacking mode (Task 7); sharing UI (Task 8);
-  exit page (#13); people (#14); buy-when-there (#15).
+- **Covered through Task #5:** auth, profiles, dashboard, trip CRUD, the
+  packing-list planning view, bags/containers, and check-off packing mode.
+- **Not yet covered (future tasks):** templates (Task 6); unpacking mode
+  (Task 7); sharing UI (Task 8); exit page (#13); people (#14);
+  buy-when-there (#15). Deferred: bag (re)assignment during packing.
 - Update this file as each task lands so the checklist stays in sync.

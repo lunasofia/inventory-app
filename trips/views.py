@@ -268,6 +268,70 @@ def bag_mark(request, pk, bag_pk):
     return _render_planning(request, trip, permission)
 
 
+# --- check-off packing mode (focused view) -----------------------------------
+
+def _pack_context(request, trip, permission):
+    mode = _group_mode(request, trip)
+    groups = _grouped_items(trip, mode)
+    pgroups = [
+        {
+            'heading': heading,
+            'bag': bag,
+            'items': items,
+            'packed': sum(1 for i in items if i.packed),
+            'total': len(items),
+        }
+        for heading, bag, items in groups
+    ]
+    return {
+        'trip': trip,
+        'permission': permission,
+        'can_edit': permission in ('owner', 'edit'),
+        'group_mode': mode,
+        'pgroups': pgroups,
+    }
+
+
+def _render_pack(request, trip, permission):
+    """Render the swappable #pack-list region."""
+    return render(request, 'trips/_packing_mode_list.html', _pack_context(request, trip, permission))
+
+
+@login_required
+def packing_mode(request, pk):
+    trip, permission = _get_trip_or_404(request.user, pk)
+    return render(request, 'trips/packing_mode.html', _pack_context(request, trip, permission))
+
+
+@login_required
+@require_POST
+def pack_toggle(request, pk, item_pk):
+    trip, permission = _get_trip_or_404(request.user, pk, require_edit=True)
+    item = get_object_or_404(PackingItem, pk=item_pk, trip=trip)
+    item.packed = not item.packed
+    item.save(update_fields=['packed'])
+    return _render_pack(request, trip, permission)
+
+
+@login_required
+def pack_group(request, pk):
+    """Toggle the grouping lens within packing mode."""
+    trip, permission = _get_trip_or_404(request.user, pk)
+    mode = request.GET.get('mode', 'category')
+    request.session[f'group_mode_{trip.pk}'] = mode if mode in ('category', 'bag') else 'category'
+    return _render_pack(request, trip, permission)
+
+
+@login_required
+@require_POST
+def pack_bag_mark(request, pk, bag_pk):
+    """Bag-level pack/unpack shortcut, re-rendering the packing region."""
+    trip, permission = _get_trip_or_404(request.user, pk, require_edit=True)
+    bag = get_object_or_404(Bag, pk=bag_pk, trip=trip)
+    bag.items.update(packed=request.POST.get('packed') == 'true')
+    return _render_pack(request, trip, permission)
+
+
 @login_required
 def item_row(request, pk, item_pk):
     """Return a single item's display row (used to cancel an inline edit)."""

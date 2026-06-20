@@ -1,0 +1,49 @@
+<div id="pack-list">
+  <div class="group-toggle">
+    <span class="muted">Group by:</span>
+    <button class="toggle-btn {% if group_mode != 'bag' %}active{% endif %}"
+            hx-get="{% url 'pack_group' trip.pk %}?mode=category"
+            hx-target="#pack-list" hx-swap="outerHTML">Category</button>
+    <button class="toggle-btn {% if group_mode == 'bag' %}active{% endif %}"
+            hx-get="{% url 'pack_group' trip.pk %}?mode=bag"
+            hx-target="#pack-list" hx-swap="outerHTML">Bag</button>
+  </div>
+
+  <div class="progress">
+    <div class="progress-track"><span style="width: {{ trip.progress_pct }}%"></span></div>
+    <span class="muted progress-label">{{ trip.packed_count }}/{{ trip.total_count }} packed</span>
+  </div>
+
+  {% if trip.total_count and trip.packed_count == trip.total_count %}
+    <p class="all-packed">✓ All packed — you're good to go!</p>
+  {% endif %}
+
+  {% if pgroups %}
+    {% for g in pgroups %}
+      <div class="group">
+        <h3 class="cat-head">
+          <span>{{ g.heading }}</span>
+          <span class="bag-status">
+            <span class="muted">{{ g.packed }}/{{ g.total }}</span>
+            {% if g.bag and can_edit %}
+              {% if g.bag.is_packed %}
+                <button class="linkbtn" type="button"
+                        hx-post="{% url 'pack_bag_mark' trip.pk g.bag.pk %}" hx-vals='{"packed": "false"}'
+                        hx-target="#pack-list" hx-swap="outerHTML">Unpack all</button>
+              {% else %}
+                <button class="linkbtn" type="button"
+                        hx-post="{% url 'pack_bag_mark' trip.pk g.bag.pk %}" hx-vals='{"packed": "true"}'
+                        hx-target="#pack-list" hx-swap="outerHTML">Pack all</button>
+              {% endif %}
+            {% endif %}
+          </span>
+        </h3>
+        <ul class="pack-ul">
+          {% for item in g.items %}{% include 'trips/_pack_item_row.html' %}{% endfor %}
+        </ul>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="muted empty">Nothing to pack yet. <a href="{% url 'trip_detail' trip.pk %}">Add items</a> first.</p>
+  {% endif %}
+</div>

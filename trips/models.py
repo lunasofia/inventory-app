@@ -24,6 +24,11 @@ class Trip(models.Model):
     status = models.CharField(
         max_length=12, choices=Status.choices, default=Status.PLANNING
     )
+    # The template this trip was created from, if any (for the drift/diff flow).
+    origin_template = models.ForeignKey(
+        'Template', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='trips_created',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -166,6 +171,9 @@ class Template(models.Model):
 
     class Meta:
         ordering = ['name']
+        constraints = [
+            models.UniqueConstraint(fields=['owner', 'name'], name='unique_template_name_per_owner')
+        ]
 
     def __str__(self):
         return self.name

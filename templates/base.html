@@ -14,6 +14,8 @@
     <nav>
       {% if user.is_authenticated %}
         <span class="who">{{ user.short_name }}</span>
+        <a href="{% url 'dashboard' %}">Trips</a>
+        <a href="{% url 'template_list' %}">Templates</a>
         <a href="{% url 'profile' %}">Profile</a>
         <form action="{% url 'logout' %}" method="post" class="inline">
           {% csrf_token %}

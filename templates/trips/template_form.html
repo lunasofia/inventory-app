@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}{% if mode == 'edit' %}Edit template{% else %}Save as template{% endif %} · Packlist{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>{% if mode == 'edit' %}Edit template{% else %}Save as template{% endif %}</h1>
+  {% if mode == 'save' %}<p class="muted">From trip: {{ trip.name }}</p>{% endif %}
+  <form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {{ form.as_p }}
+    <div class="form-actions">
+      <button class="btn primary" type="submit">{% if mode == 'edit' %}Save{% else %}Create template{% endif %}</button>
+      <a class="btn" href="{% if mode == 'edit' %}{% url 'template_detail' template.pk %}{% else %}{% url 'trip_detail' trip.pk %}{% endif %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

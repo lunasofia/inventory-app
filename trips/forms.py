@@ -2,10 +2,16 @@ from django import forms
 
 from catalog.models import Category
 
-from .models import Bag, PackingItem, Trip
+from .models import Bag, PackingItem, Template, TemplateItem, Trip
 
 
 class TripForm(forms.ModelForm):
+    # Non-model field: optionally start a new trip from a template (create only).
+    start_from_template = forms.ModelChoiceField(
+        queryset=Template.objects.none(), required=False, empty_label='Start blank',
+        label='Start from template',
+    )
+
     class Meta:
         model = Trip
         fields = ('name', 'destination', 'start_date', 'end_date', 'status', 'notes')
@@ -15,12 +21,77 @@ class TripForm(forms.ModelForm):
             'notes': forms.Textarea(attrs={'rows': 3}),
         }
 
+    def __init__(self, *args, owner=None, show_template=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        if show_template and owner is not None:
+            self.fields['start_from_template'].queryset = Template.objects.filter(owner=owner)
+        else:
+            del self.fields['start_from_template']
+
     def clean(self):
         cleaned = super().clean()
         start, end = cleaned.get('start_date'), cleaned.get('end_date')
         if start and end and end < start:
             self.add_error('end_date', 'End date cannot be before the start date.')
         return cleaned
+
+
+class TemplateForm(forms.ModelForm):
+    """Create/rename a template. Names are unique (case-insensitive) per owner."""
+
+    class Meta:
+        model = Template
+        fields = ('name', 'description')
+        widgets = {'description': forms.Textarea(attrs={'rows': 2})}
+
+    def __init__(self, *args, owner=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.owner = owner
+
+    def clean_name(self):
+        name = self.cleaned_data['name'].strip()
+        if not name:
+            raise forms.ValidationError('Template name is required.')
+        dupes = Template.objects.filter(owner=self.owner, name__iexact=name)
+        if self.instance.pk:
+            dupes = dupes.exclude(pk=self.instance.pk)
+        if dupes.exists():
+            raise forms.ValidationError('You already have a template with that name.')
+        return name
+
+
+class TemplateItemForm(forms.ModelForm):
+    """Add/edit a template line. Category choices scoped to the acting user."""
+
+    class Meta:
+        model = TemplateItem
+        fields = ('name', 'quantity', 'category')
+        widgets = {
+            'name': forms.TextInput(attrs={'placeholder': 'Add an item…', 'autocomplete': 'off'}),
+            'quantity': forms.NumberInput(attrs={'min': 1, 'class': 'qty'}),
+        }
+
+    def __init__(self, *args, owner=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['category'].required = False
+        self.fields['category'].empty_label = 'Uncategorized'
+        self.fields['quantity'].required = False
+        if owner is not None:
+            self.fields['category'].queryset = Category.objects.filter(owner=owner)
+
+    def clean_name(self):
+        name = self.cleaned_data['name'].strip()
+        if not name:
+            raise forms.ValidationError('Item name is required.')
+        return name
+
+    def clean_quantity(self):
+        qty = self.cleaned_data.get('quantity')
+        if qty is None:
+            return 1
+        if qty < 1:
+            raise forms.ValidationError('Quantity must be at least 1.')
+        return qty
 
 
 class PackingItemForm(forms.ModelForm):

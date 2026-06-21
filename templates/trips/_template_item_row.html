@@ -1,0 +1,15 @@
+<li class="trip-card item-row" id="titem-{{ item.pk }}">
+  <span class="item-main">
+    {{ item.quantity }}× {{ item.name }}
+    {% if item.category %}<span class="bag-tag">{{ item.category.name }}</span>{% endif %}
+  </span>
+  <span class="item-actions">
+    <button class="linkbtn" type="button"
+            hx-get="{% url 'template_item_edit' template.pk item.pk %}"
+            hx-target="#titem-{{ item.pk }}" hx-swap="outerHTML">Edit</button>
+    <button class="linkbtn danger" type="button"
+            hx-post="{% url 'template_item_delete' template.pk item.pk %}"
+            hx-target="#template-items" hx-swap="outerHTML"
+            hx-confirm="Remove {{ item.name }}?">Remove</button>
+  </span>
+</li>

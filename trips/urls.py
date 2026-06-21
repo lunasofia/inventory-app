@@ -26,4 +26,15 @@ urlpatterns = [
     path('trips/<int:pk>/pack/group/', views.pack_group, name='pack_group'),
     path('trips/<int:pk>/pack/<int:item_pk>/toggle/', views.pack_toggle, name='pack_toggle'),
     path('trips/<int:pk>/pack/bags/<int:bag_pk>/mark/', views.pack_bag_mark, name='pack_bag_mark'),
+    # Templates / reuse
+    path('templates/', views.template_list, name='template_list'),
+    path('trips/<int:pk>/save-template/', views.save_as_template, name='save_as_template'),
+    path('trips/<int:pk>/diff/', views.template_diff, name='template_diff'),
+    path('templates/<int:pk>/', views.template_detail, name='template_detail'),
+    path('templates/<int:pk>/edit/', views.template_edit, name='template_edit'),
+    path('templates/<int:pk>/delete/', views.template_delete, name='template_delete'),
+    path('templates/<int:pk>/items/add/', views.template_item_add, name='template_item_add'),
+    path('templates/<int:pk>/items/<int:item_pk>/', views.template_item_row, name='template_item_row'),
+    path('templates/<int:pk>/items/<int:item_pk>/edit/', views.template_item_edit, name='template_item_edit'),
+    path('templates/<int:pk>/items/<int:item_pk>/delete/', views.template_item_delete, name='template_item_delete'),
 ]

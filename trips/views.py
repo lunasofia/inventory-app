@@ -3,12 +3,38 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import F, Max
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from catalog.models import Condition, Item
+from catalog.models import Category, Condition, Item
 
-from .forms import BagForm, PackingItemForm, TripForm
-from .models import Bag, PackingItem, Trip
+from .forms import (
+    BagForm,
+    PackingItemForm,
+    TemplateForm,
+    TemplateItemForm,
+    TripForm,
+)
+from .models import Bag, PackingItem, Template, TemplateItem, Trip
+
+
+def _resolve_owner_category(owner, category):
+    """Return a Category owned by `owner` matching `category` (by name), creating
+    it if needed. Keeps shared-trip categories from leaking across users."""
+    if category is None:
+        return None
+    if category.owner_id == owner.id:
+        return category
+    cat, _ = Category.objects.get_or_create(owner=owner, name=category.name)
+    return cat
+
+
+def _link_catalog_no_bump(owner, name, category):
+    """Find/create the owner's catalog item without incrementing usage."""
+    item = Item.objects.filter(owner=owner, name__iexact=name).first()
+    if item is None:
+        item = Item.objects.create(owner=owner, name=name, category=category)
+    return item
 
 
 def _group_mode(request, trip):
@@ -95,16 +121,34 @@ def dashboard(request):
 @login_required
 def trip_create(request):
     if request.method == 'POST':
-        form = TripForm(request.POST)
+        form = TripForm(request.POST, owner=request.user, show_template=True)
         if form.is_valid():
             trip = form.save(commit=False)
             trip.owner = request.user
+            template = form.cleaned_data.get('start_from_template')
+            if template is not None:
+                trip.origin_template = template
             trip.save()
+            if template is not None:
+                _clone_template_into_trip(template, trip)
             messages.success(request, f'Created "{trip.name}".')
             return redirect('trip_detail', pk=trip.pk)
     else:
-        form = TripForm()
+        form = TripForm(owner=request.user, show_template=True)
     return render(request, 'trips/trip_form.html', {'form': form, 'mode': 'create'})
+
+
+def _clone_template_into_trip(template, trip):
+    """Copy a template's items into a new trip's packing list (catalog-linked,
+    usage not bumped)."""
+    default_cond = Condition.objects.filter(owner=trip.owner, is_default=True).first()
+    for ti in template.items.all().order_by('sort_order', 'name'):
+        category = _resolve_owner_category(trip.owner, ti.category)
+        PackingItem.objects.create(
+            trip=trip, name=ti.name, category=category, quantity=ti.quantity,
+            sort_order=ti.sort_order, condition=default_cond,
+            catalog_item=_link_catalog_no_bump(trip.owner, ti.name, category),
+        )
 
 
 @login_required
@@ -330,6 +374,219 @@ def pack_bag_mark(request, pk, bag_pk):
     bag = get_object_or_404(Bag, pk=bag_pk, trip=trip)
     bag.items.update(packed=request.POST.get('packed') == 'true')
     return _render_pack(request, trip, permission)
+
+
+# --- templates / reuse -------------------------------------------------------
+
+def _get_template_or_404(user, pk):
+    return get_object_or_404(Template, pk=pk, owner=user)
+
+
+@login_required
+def save_as_template(request, pk):
+    """Save a trip's current list as a new template owned by the acting user."""
+    trip, _ = _get_trip_or_404(request.user, pk)  # any access can copy into own template
+    if request.method == 'POST':
+        form = TemplateForm(request.POST, owner=request.user)
+        if form.is_valid():
+            template = form.save(commit=False)
+            template.owner = request.user
+            template.save()
+            for pi in trip.items.all().order_by('sort_order', 'name'):
+                TemplateItem.objects.create(
+                    template=template, name=pi.name,
+                    category=_resolve_owner_category(request.user, pi.category),
+                    quantity=pi.quantity, sort_order=pi.sort_order,
+                )
+            messages.success(request, f'Saved template "{template.name}".')
+            return redirect('template_detail', pk=template.pk)
+    else:
+        form = TemplateForm(owner=request.user, initial={'name': trip.name})
+    return render(request, 'trips/template_form.html',
+                  {'form': form, 'mode': 'save', 'trip': trip})
+
+
+@login_required
+def template_list(request):
+    templates = Template.objects.filter(owner=request.user).prefetch_related('items')
+    return render(request, 'trips/template_list.html', {'templates': templates})
+
+
+def _template_context(request, template, add_form=None):
+    return {
+        'template': template,
+        'items': template.items.select_related('category'),
+        'add_form': add_form if add_form is not None else TemplateItemForm(owner=request.user),
+    }
+
+
+def _render_template_items(request, template, add_form=None):
+    return render(request, 'trips/_template_items.html',
+                  _template_context(request, template, add_form))
+
+
+@login_required
+def template_detail(request, pk):
+    template = _get_template_or_404(request.user, pk)
+    return render(request, 'trips/template_detail.html', _template_context(request, template))
+
+
+@login_required
+def template_edit(request, pk):
+    template = _get_template_or_404(request.user, pk)
+    if request.method == 'POST':
+        form = TemplateForm(request.POST, instance=template, owner=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Template updated.')
+            return redirect('template_detail', pk=template.pk)
+    else:
+        form = TemplateForm(instance=template, owner=request.user)
+    return render(request, 'trips/template_form.html',
+                  {'form': form, 'mode': 'edit', 'template': template})
+
+
+@login_required
+def template_delete(request, pk):
+    template = _get_template_or_404(request.user, pk)
+    if request.method == 'POST':
+        name = template.name
+        template.delete()
+        messages.success(request, f'Deleted template "{name}".')
+        return redirect('template_list')
+    return render(request, 'trips/template_confirm_delete.html', {'template': template})
+
+
+@login_required
+@require_POST
+def template_item_add(request, pk):
+    template = _get_template_or_404(request.user, pk)
+    form = TemplateItemForm(request.POST, owner=request.user)
+    if form.is_valid():
+        item = form.save(commit=False)
+        item.template = template
+        item.sort_order = (template.items.aggregate(m=Max('sort_order'))['m'] or 0) + 1
+        item.save()
+        return _render_template_items(request, template)
+    return _render_template_items(request, template, add_form=form)
+
+
+@login_required
+def template_item_edit(request, pk, item_pk):
+    template = _get_template_or_404(request.user, pk)
+    item = get_object_or_404(TemplateItem, pk=item_pk, template=template)
+    if request.method == 'POST':
+        form = TemplateItemForm(request.POST, instance=item, owner=request.user)
+        if form.is_valid():
+            form.save()
+            return _render_template_items(request, template)
+        return render(request, 'trips/_template_item_edit_row.html',
+                      {'template': template, 'item': item, 'form': form})
+    form = TemplateItemForm(instance=item, owner=request.user)
+    return render(request, 'trips/_template_item_edit_row.html',
+                  {'template': template, 'item': item, 'form': form})
+
+
+@login_required
+def template_item_row(request, pk, item_pk):
+    template = _get_template_or_404(request.user, pk)
+    item = get_object_or_404(TemplateItem, pk=item_pk, template=template)
+    return render(request, 'trips/_template_item_row.html', {'template': template, 'item': item})
+
+
+@login_required
+@require_POST
+def template_item_delete(request, pk, item_pk):
+    template = _get_template_or_404(request.user, pk)
+    item = get_object_or_404(TemplateItem, pk=item_pk, template=template)
+    item.delete()
+    return _render_template_items(request, template)
+
+
+# --- diff view (drift) -------------------------------------------------------
+
+def _aggregate_items(items):
+    """Aggregate a list of (name, quantity, category) rows by case-insensitive
+    name, summing quantities. Returns {key: {name, qty, category, category_name}}."""
+    agg = {}
+    for it in items:
+        key = it.name.strip().lower()
+        cat_name = it.category.name if it.category else None
+        if key not in agg:
+            agg[key] = {'name': it.name, 'qty': 0, 'category': it.category, 'category_name': cat_name}
+        agg[key]['qty'] += it.quantity
+        if agg[key]['category'] is None and it.category is not None:
+            agg[key]['category'] = it.category
+            agg[key]['category_name'] = cat_name
+    return agg
+
+
+def _template_diff(trip, template):
+    trip_map = _aggregate_items(trip.items.select_related('category'))
+    tmpl_map = _aggregate_items(template.items.select_related('category'))
+    added, removed, changed = [], [], []
+    for key, t in trip_map.items():
+        if key not in tmpl_map:
+            added.append({'key': key, 'name': t['name'], 'qty': t['qty'],
+                          'category_name': t['category_name']})
+        else:
+            m = tmpl_map[key]
+            if t['qty'] != m['qty'] or t['category_name'] != m['category_name']:
+                changed.append({
+                    'key': key, 'name': t['name'],
+                    'from_qty': m['qty'], 'to_qty': t['qty'],
+                    'from_cat': m['category_name'], 'to_cat': t['category_name'],
+                })
+    for key, m in tmpl_map.items():
+        if key not in trip_map:
+            removed.append({'key': key, 'name': m['name'], 'qty': m['qty'],
+                            'category_name': m['category_name']})
+    return {'added': added, 'removed': removed, 'changed': changed,
+            'has_changes': bool(added or removed or changed)}
+
+
+@login_required
+def template_diff(request, pk):
+    """Review/promote a trip's changes back into a template (the drift flow)."""
+    trip, _ = _get_trip_or_404(request.user, pk)
+    tpl_id = request.POST.get('template') or request.GET.get('template')
+    if tpl_id:
+        template = get_object_or_404(Template, pk=tpl_id, owner=request.user)
+    elif trip.origin_template_id and trip.origin_template.owner_id == request.user.id:
+        template = trip.origin_template
+    else:
+        template = None
+
+    if template is None:
+        # No usable target: let the user pick one of their templates (or save as new).
+        return render(request, 'trips/template_diff.html', {
+            'trip': trip, 'template': None,
+            'templates': Template.objects.filter(owner=request.user),
+        })
+
+    if request.method == 'POST':
+        trip_map = _aggregate_items(trip.items.select_related('category'))
+        applied = 0
+        for sel in request.POST.getlist('apply'):
+            typ, _, key = sel.partition(':')
+            TemplateItem.objects.filter(template=template, name__iexact=key).delete()
+            if typ in ('added', 'changed'):
+                t = trip_map.get(key)
+                if t:
+                    TemplateItem.objects.create(
+                        template=template, name=t['name'],
+                        category=_resolve_owner_category(request.user, t['category']),
+                        quantity=t['qty'],
+                    )
+            applied += 1
+        messages.success(request, f'Applied {applied} change(s) to "{template.name}".')
+        return redirect(f"{reverse('template_diff', args=[trip.pk])}?template={template.pk}")
+
+    return render(request, 'trips/template_diff.html', {
+        'trip': trip, 'template': template,
+        'diff': _template_diff(trip, template),
+        'templates': Template.objects.filter(owner=request.user),
+    })
 
 
 @login_required

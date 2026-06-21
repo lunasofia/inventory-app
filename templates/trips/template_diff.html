@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}Update template · Packlist{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Update template from “{{ trip.name }}”</h1></div>
+
+{% if template is None %}
+  <div class="card">
+    <p>This trip isn't linked to a template. Pick one to compare against:</p>
+    {% if templates %}
+      <form method="get" class="form-actions">
+        <select name="template">
+          {% for t in templates %}<option value="{{ t.pk }}">{{ t.name }}</option>{% endfor %}
+        </select>
+        <button class="btn primary" type="submit">Compare</button>
+      </form>
+    {% else %}
+      <p class="muted">You have no templates yet.</p>
+    {% endif %}
+    <p style="margin-top:1rem"><a class="btn" href="{% url 'save_as_template' trip.pk %}">Save as new template</a></p>
+  </div>
+{% else %}
+  <p class="muted">Comparing against template: <strong>{{ template.name }}</strong></p>
+  {% if diff.has_changes %}
+    <form method="post" class="card">
+      {% csrf_token %}
+      <input type="hidden" name="template" value="{{ template.pk }}">
+
+      {% if diff.added %}
+        <h2>Add to template</h2>
+        <ul class="diff-list">
+          {% for d in diff.added %}
+            <li><label><input type="checkbox" name="apply" value="added:{{ d.key }}">
+              <span class="diff-add">＋ {{ d.qty }}× {{ d.name }}{% if d.category_name %} <span class="muted">({{ d.category_name }})</span>{% endif %}</span>
+            </label></li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      {% if diff.changed %}
+        <h2>Update in template</h2>
+        <ul class="diff-list">
+          {% for d in diff.changed %}
+            <li><label><input type="checkbox" name="apply" value="changed:{{ d.key }}">
+              <span class="diff-change">~ {{ d.name }}:
+                {% if d.from_qty != d.to_qty %}qty {{ d.from_qty }}→{{ d.to_qty }}{% endif %}
+                {% if d.from_cat != d.to_cat %} <span class="muted">cat {{ d.from_cat|default:"—" }}→{{ d.to_cat|default:"—" }}</span>{% endif %}
+              </span>
+            </label></li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      {% if diff.removed %}
+        <h2>Remove from template</h2>
+        <ul class="diff-list">
+          {% for d in diff.removed %}
+            <li><label><input type="checkbox" name="apply" value="removed:{{ d.key }}">
+              <span class="diff-remove">－ {{ d.qty }}× {{ d.name }}</span>
+            </label></li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      <div class="form-actions">
+        <button class="btn primary" type="submit">Apply selected</button>
+        <a class="btn" href="{% url 'trip_detail' trip.pk %}">Back to trip</a>
+      </div>
+    </form>
+  {% else %}
+    <div class="card">
+      <p>✓ This trip matches the template — nothing to update.</p>
+      <a class="btn" href="{% url 'trip_detail' trip.pk %}">Back to trip</a>
+    </div>
+  {% endif %}
+{% endif %}
+{% endblock %}

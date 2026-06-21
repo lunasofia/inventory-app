@@ -218,6 +218,38 @@ trip page. Check-off only (editing stays on the planning view).
 | 16.12 | View-only shared user | Sees list + progress read-only; no check controls; direct POST to toggle/bag-mark → 404 |
 | 16.13 | Reload after checking items; also view planning page | Packed states persist and are reflected on the planning view (shared field) |
 
+## 17. Templates / reuse (Task #6)
+
+Reuse a packing list across trips; keep the baseline from drifting via a diff view.
+
+| # | Steps | Expected |
+|---|-------|----------|
+| 17.1 | On a trip, "Save as template", name it | Template created with an item per packing line (name/category/quantity); packed state not copied |
+| 17.2 | Save with a duplicate template name (same owner) | Rejected: "already have a template with that name" |
+| 17.3 | New trip → "Start from template" → pick one | Trip populated from the template; trip's `origin_template` set |
+| 17.4 | Cloned items | Linked to catalog; `times_used` NOT bumped by the clone |
+| 17.5 | New trip with no template | Empty list; no origin template |
+| 17.6 | Templates nav → list | Shows your templates with item counts |
+| 17.7 | Template detail: add / edit / remove items | Inline HTMX editing persists |
+| 17.8 | Rename / delete a template | Updates / removes; trips made from it unaffected |
+| 17.9 | Another user's template (view/edit/delete) | 404 |
+| 17.10 | View-only shared trip → "Save as template" | Allowed; template owned by the acting user |
+| 17.11 | "Update template…" on a trip with an origin | Diff view: Added / Removed / Changed (quantity or category) vs the template |
+| 17.12 | Select some changes → Apply selected | Only chosen changes written to the template; others untouched |
+| 17.13 | Diff matching | Case-insensitive by name (e.g. "wool socks" vs "Wool socks" = a change, not add+remove) |
+| 17.14 | "Update template…" on a trip with no origin | Picker to choose a target template, or "Save as new template" |
+
+## Resolved design decisions (Templates)
+
+- Drift solved via a **diff view** (added/removed/changed), promoted back per-change.
+- Match by **name, case-insensitive**; duplicate-named trip lines aggregated
+  (quantities summed) for the diff.
+- Changed = **quantity or category** differs; applying updates both.
+- Applying a category resolves to the **template owner's** category by name
+  (no cross-user leak).
+- Trips remember their **origin template** (`Trip.origin_template`).
+- v1 templates capture **name + category + quantity** only (bags deferred).
+
 ## Resolved design decisions (Bags)
 
 - **Per-trip bags** (no reusable "bags I own" library yet; reuse comes via
@@ -231,9 +263,11 @@ trip page. Check-off only (editing stays on the planning view).
 
 ## Coverage notes
 
-- **Covered through Task #5:** auth, profiles, dashboard, trip CRUD, the
-  packing-list planning view, bags/containers, and check-off packing mode.
-- **Not yet covered (future tasks):** templates (Task 6); unpacking mode
-  (Task 7); sharing UI (Task 8); exit page (#13); people (#14);
-  buy-when-there (#15). Deferred: bag (re)assignment during packing.
+- **Covered through Task #6:** auth, profiles, dashboard, trip CRUD, the
+  packing-list planning view, bags/containers, check-off packing mode, and
+  templates/reuse (incl. the diff/drift flow).
+- **Not yet covered (future tasks):** unpacking mode (Task 7); sharing UI
+  (Task 8); exit page (#13); people (#14); buy-when-there (#15). Deferred: bag
+  (re)assignment during packing; templates capturing bags; sharing templates/
+  catalog items.
 - Update this file as each task lands so the checklist stays in sync.

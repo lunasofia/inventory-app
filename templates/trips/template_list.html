@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Templates · Packlist{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Templates</h1></div>
+
+{% if templates %}
+  <ul class="trip-list">
+    {% for t in templates %}
+      <li class="trip-card">
+        <a class="trip-main" href="{% url 'template_detail' t.pk %}">
+          <strong>{{ t.name }}</strong>
+          <span class="muted">· {{ t.items.count }} item{{ t.items.count|pluralize }}</span>
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="muted empty">No templates yet. Open a trip and choose "Save as template" to create one.</p>
+{% endif %}
+{% endblock %}

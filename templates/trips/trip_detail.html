@@ -12,6 +12,8 @@
   </div>
   <div class="form-actions">
     <a class="btn primary" href="{% url 'packing_mode' trip.pk %}">🎒 Packing mode</a>
+    <a class="btn" href="{% url 'save_as_template' trip.pk %}">Save as template</a>
+    <a class="btn" href="{% url 'template_diff' trip.pk %}">Update template…</a>
     {% if can_edit %}
       <a class="btn" href="{% url 'trip_edit' trip.pk %}">Edit</a>
       {% if permission == 'owner' %}

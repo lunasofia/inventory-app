@@ -1,0 +1,15 @@
+<div id="categories" class="bags-bar">
+  <span class="muted">Categories:</span>
+  <div class="bags-list">
+    {% for c in cats %}
+      {% include 'trips/_category_chip.html' with cat=c.cat usage=c.usage %}
+    {% endfor %}
+    <form class="add-bag-form" hx-post="{% url 'category_add' %}"
+          hx-target="{{ cat_target }}" hx-swap="outerHTML">
+      {% if cat_trip %}<input type="hidden" name="trip" value="{{ cat_trip.pk }}">{% endif %}
+      {{ cat_add_form.name }}
+      <button class="btn" type="submit">+ Category</button>
+    </form>
+  </div>
+  {% if cat_add_form.errors %}<p class="field-error">{{ cat_add_form.name.errors.0 }}</p>{% endif %}
+</div>

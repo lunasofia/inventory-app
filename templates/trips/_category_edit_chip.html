@@ -1,0 +1,12 @@
+<span class="bag-chip editing" id="cat-chip-{{ cat.pk }}">
+  <form class="bag-edit-form" hx-post="{% url 'category_rename' cat.pk %}"
+        hx-target="{{ cat_target }}" hx-swap="outerHTML">
+    {% if cat_trip %}<input type="hidden" name="trip" value="{{ cat_trip.pk }}">{% endif %}
+    {{ form.name }}
+    <button class="linkbtn" type="submit" title="Save">✓</button>
+    <button class="linkbtn" type="button" title="Cancel"
+            hx-get="{% url 'category_chip' cat.pk %}{% if cat_trip %}?trip={{ cat_trip.pk }}{% endif %}"
+            hx-target="#cat-chip-{{ cat.pk }}" hx-swap="outerHTML">✕</button>
+  </form>
+  {% if form.errors %}<span class="field-error">{{ form.name.errors.0 }}</span>{% endif %}
+</span>

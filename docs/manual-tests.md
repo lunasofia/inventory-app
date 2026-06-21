@@ -239,6 +239,36 @@ Reuse a packing list across trips; keep the baseline from drifting via a diff vi
 | 17.13 | Diff matching | Case-insensitive by name (e.g. "wool socks" vs "Wool socks" = a change, not add+remove) |
 | 17.14 | "Update template…" on a trip with no origin | Picker to choose a target template, or "Save as new template" |
 
+## 18. Category management (small feature)
+
+Add / rename / delete your own categories. Categories are **global to the user**
+(shared across all trips and templates). Panel on the planning view + a manager
+page linked from Profile.
+
+| # | Steps | Expected |
+|---|-------|----------|
+| 18.1 | In the Categories panel, add "Beach gear" | Created; appears as a chip and becomes selectable in item dropdowns |
+| 18.2 | Add an existing name, any casing | No duplicate (case-insensitive dedupe) |
+| 18.3 | Add an empty name | Rejected; nothing created |
+| 18.4 | Rename a category (fix a typo) | Name updates; items keep their association (now show the new name) |
+| 18.5 | Rename to a name that duplicates another | Rejected: "already have a category with that name" |
+| 18.6 | Delete a category in use | Confirm states impact ("used by N items… they'll become Uncategorized") |
+| 18.7 | Confirm delete | Category gone; affected items across all trips + template entries become Uncategorized; items not deleted |
+| 18.8 | After add/delete | Reflected in item dropdowns and the template editor (global) |
+| 18.9 | Another user's category (rename/delete) | 404 |
+| 18.10 | Category panel placement | Shown on the planning view (when editable) and on the `/categories/` page linked from Profile |
+
+## Resolved design decisions (Categories)
+
+- Categories are **global to the user**; managed in one place, reflected
+  everywhere. No schema change (reuses `catalog.Category`).
+- Add **dedupes case-insensitively**; rename enforces case-insensitive uniqueness.
+- **Delete** uses the existing `SET_NULL` FKs → items everywhere become
+  Uncategorized (never deleted); confirm shows usage count (packing + template
+  items).
+- Panel re-renders the planning region on the planning view (dropdowns refresh)
+  and just the panel on the standalone manager page.
+
 ## Resolved design decisions (Templates)
 
 - Drift solved via a **diff view** (added/removed/changed), promoted back per-change.
@@ -263,9 +293,9 @@ Reuse a packing list across trips; keep the baseline from drifting via a diff vi
 
 ## Coverage notes
 
-- **Covered through Task #6:** auth, profiles, dashboard, trip CRUD, the
-  packing-list planning view, bags/containers, check-off packing mode, and
-  templates/reuse (incl. the diff/drift flow).
+- **Covered through Task #6 + category management:** auth, profiles, dashboard,
+  trip CRUD, the packing-list planning view, bags/containers, check-off packing
+  mode, templates/reuse (incl. the diff/drift flow), and category add/rename/delete.
 - **Not yet covered (future tasks):** unpacking mode (Task 7); sharing UI
   (Task 8); exit page (#13); people (#14); buy-when-there (#15). Deferred: bag
   (re)assignment during packing; templates capturing bags; sharing templates/

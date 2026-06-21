@@ -1,0 +1,11 @@
+<span class="bag-chip" id="cat-chip-{{ cat.pk }}">
+  <span class="bag-chip-name">{{ cat.name }}</span>
+  <button class="linkbtn" type="button" title="Rename"
+          hx-get="{% url 'category_rename' cat.pk %}{% if cat_trip %}?trip={{ cat_trip.pk }}{% endif %}"
+          hx-target="#cat-chip-{{ cat.pk }}" hx-swap="outerHTML">✎</button>
+  <button class="linkbtn danger" type="button" title="Delete"
+          hx-post="{% url 'category_delete' cat.pk %}"
+          {% if cat_trip %}hx-vals='{"trip": "{{ cat_trip.pk }}"}'{% endif %}
+          hx-target="{{ cat_target }}" hx-swap="outerHTML"
+          hx-confirm="Delete &quot;{{ cat.name }}&quot;? It's used by {{ usage }} item{{ usage|pluralize }} across your trips and templates — they'll become Uncategorized.">✕</button>
+</span>

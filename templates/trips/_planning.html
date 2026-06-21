@@ -1,5 +1,6 @@
 <div id="planning">
   {% include 'trips/_bags_bar.html' %}
+  {% if can_edit %}{% include 'trips/_categories.html' %}{% endif %}
 
   {% if can_edit %}
     <form id="add-item-form" class="add-item"

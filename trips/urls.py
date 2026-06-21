@@ -37,4 +37,10 @@ urlpatterns = [
     path('templates/<int:pk>/items/<int:item_pk>/', views.template_item_row, name='template_item_row'),
     path('templates/<int:pk>/items/<int:item_pk>/edit/', views.template_item_edit, name='template_item_edit'),
     path('templates/<int:pk>/items/<int:item_pk>/delete/', views.template_item_delete, name='template_item_delete'),
+    # Category management
+    path('categories/', views.category_manage, name='category_manage'),
+    path('categories/add/', views.category_add, name='category_add'),
+    path('categories/<int:pk>/', views.category_chip, name='category_chip'),
+    path('categories/<int:pk>/rename/', views.category_rename, name='category_rename'),
+    path('categories/<int:pk>/delete/', views.category_delete, name='category_delete'),
 ]

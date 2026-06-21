@@ -10,6 +10,7 @@ from catalog.models import Category, Condition, Item
 
 from .forms import (
     BagForm,
+    CategoryForm,
     PackingItemForm,
     TemplateForm,
     TemplateItemForm,
@@ -188,9 +189,32 @@ def trip_delete(request, pk):
 
 # --- packing-list items (planning view) ------------------------------------
 
-def _planning_context(request, trip, permission, add_form=None, bag_form=None):
-    mode = _group_mode(request, trip)
+def _category_usage(category):
+    """How many packing items + template items reference this category."""
+    return (
+        PackingItem.objects.filter(category=category).count()
+        + TemplateItem.objects.filter(category=category).count()
+    )
+
+
+def _categories_panel(request, trip=None, cat_add_form=None):
+    """Context for the reusable category-manager panel. `trip` present => the
+    panel lives on the planning view and controls re-render the planning region."""
+    cats = [
+        {'cat': c, 'usage': _category_usage(c)}
+        for c in Category.objects.filter(owner=request.user)
+    ]
     return {
+        'cats': cats,
+        'cat_add_form': cat_add_form if cat_add_form is not None else CategoryForm(owner=request.user),
+        'cat_target': '#planning' if trip is not None else '#categories',
+        'cat_trip': trip,
+    }
+
+
+def _planning_context(request, trip, permission, add_form=None, bag_form=None, cat_add_form=None):
+    mode = _group_mode(request, trip)
+    context = {
         'trip': trip,
         'permission': permission,
         'can_edit': permission in ('owner', 'edit'),
@@ -201,11 +225,14 @@ def _planning_context(request, trip, permission, add_form=None, bag_form=None):
         else PackingItemForm(owner=request.user, trip=trip),
         'bag_form': bag_form if bag_form is not None else BagForm(trip=trip),
     }
+    context.update(_categories_panel(request, trip, cat_add_form))
+    return context
 
 
-def _render_planning(request, trip, permission, add_form=None, bag_form=None, status=200):
+def _render_planning(request, trip, permission, add_form=None, bag_form=None,
+                     cat_add_form=None, status=200):
     """Render the swappable #planning region (bags bar + add form + grouped list)."""
-    context = _planning_context(request, trip, permission, add_form, bag_form)
+    context = _planning_context(request, trip, permission, add_form, bag_form, cat_add_form)
     return render(request, 'trips/_planning.html', context, status=status)
 
 
@@ -587,6 +614,87 @@ def template_diff(request, pk):
         'diff': _template_diff(trip, template),
         'templates': Template.objects.filter(owner=request.user),
     })
+
+
+# --- category management -----------------------------------------------------
+
+def _opt_trip(request):
+    """Optional trip context for category endpoints: present when the panel is
+    used on the planning view (controls then re-render the planning region)."""
+    tid = request.POST.get('trip') or request.GET.get('trip')
+    if not tid:
+        return None, None
+    return _get_trip_or_404(request.user, tid, require_edit=True)
+
+
+def _category_chip_ctx(request, category, trip):
+    return {
+        'cat': category,
+        'usage': _category_usage(category),
+        'cat_target': '#planning' if trip is not None else '#categories',
+        'cat_trip': trip,
+    }
+
+
+def _render_after_category(request, trip, cat_add_form=None):
+    if trip is not None:
+        return _render_planning(request, trip, trip.permission_for(request.user),
+                                cat_add_form=cat_add_form)
+    return render(request, 'trips/_categories.html',
+                  _categories_panel(request, None, cat_add_form))
+
+
+@login_required
+def category_manage(request):
+    return render(request, 'trips/category_manage.html', _categories_panel(request, None))
+
+
+@login_required
+@require_POST
+def category_add(request):
+    trip, _ = _opt_trip(request)
+    form = CategoryForm(request.POST, owner=request.user)
+    if form.is_valid():
+        name = form.cleaned_data['name']
+        # Reuse an existing same-name category (case-insensitive) instead of duplicating.
+        if not Category.objects.filter(owner=request.user, name__iexact=name).exists():
+            Category.objects.create(owner=request.user, name=name)
+        return _render_after_category(request, trip)
+    return _render_after_category(request, trip, cat_add_form=form)
+
+
+@login_required
+def category_rename(request, pk):
+    trip, _ = _opt_trip(request)
+    category = get_object_or_404(Category, pk=pk, owner=request.user)
+    if request.method == 'POST':
+        form = CategoryForm(request.POST, instance=category, owner=request.user)
+        if form.is_valid():
+            form.save()
+            return _render_after_category(request, trip)
+        ctx = _category_chip_ctx(request, category, trip)
+        ctx['form'] = form
+        return render(request, 'trips/_category_edit_chip.html', ctx)
+    ctx = _category_chip_ctx(request, category, trip)
+    ctx['form'] = CategoryForm(instance=category, owner=request.user)
+    return render(request, 'trips/_category_edit_chip.html', ctx)
+
+
+@login_required
+def category_chip(request, pk):
+    """Display chip (used to cancel an inline rename)."""
+    trip, _ = _opt_trip(request)
+    category = get_object_or_404(Category, pk=pk, owner=request.user)
+    return render(request, 'trips/_category_chip.html', _category_chip_ctx(request, category, trip))
+
+
+@login_required
+@require_POST
+def category_delete(request, pk):
+    trip, _ = _opt_trip(request)
+    category = get_object_or_404(Category, pk=pk, owner=request.user)
+    category.delete()  # FKs are SET_NULL -> items everywhere become Uncategorized
+    return _render_after_category(request, trip)
 
 
 @login_required

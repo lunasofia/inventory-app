@@ -133,6 +133,30 @@ class PackingItemForm(forms.ModelForm):
         return qty
 
 
+class CategoryForm(forms.ModelForm):
+    """Add/rename a category. Rename enforces case-insensitive uniqueness per
+    owner; add dedupes by reusing an existing same-name category (in the view)."""
+
+    class Meta:
+        model = Category
+        fields = ('name',)
+        widgets = {'name': forms.TextInput(attrs={'placeholder': 'Add a category…', 'autocomplete': 'off'})}
+
+    def __init__(self, *args, owner=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.owner = owner
+
+    def clean_name(self):
+        name = self.cleaned_data['name'].strip()
+        if not name:
+            raise forms.ValidationError('Category name is required.')
+        if self.instance.pk:  # rename: must stay unique
+            dupes = Category.objects.filter(owner=self.owner, name__iexact=name).exclude(pk=self.instance.pk)
+            if dupes.exists():
+                raise forms.ValidationError('You already have a category with that name.')
+        return name
+
+
 class BagForm(forms.ModelForm):
     """Create/rename a bag. Names are unique (case-insensitive) per trip."""
 

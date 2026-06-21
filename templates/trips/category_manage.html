@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block title %}Categories · Packlist{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Your categories</h1></div>
+<p class="muted">Categories are shared across all your trips and templates.
+  Renaming fixes a name everywhere; deleting one makes its items Uncategorized.</p>
+{% include 'trips/_categories.html' %}
+{% endblock %}

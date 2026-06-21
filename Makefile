@@ -19,3 +19,6 @@ install-dev:    ## Install dev + test dependencies
 
 superuser:      ## Create a Django superuser
 	$(VENV)/python manage.py createsuperuser
+
+seed-demo:      ## Seed/rebuild the demo account (demo@packlist.app / demo12345)
+	$(VENV)/python manage.py seed_demo

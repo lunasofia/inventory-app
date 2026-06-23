@@ -35,10 +35,11 @@ gcloud services enable run.googleapis.com cloudbuild.googleapis.com \
   sqladmin.googleapis.com secretmanager.googleapis.com artifactregistry.googleapis.com
 ```
 
-## 3. Create the Cloud SQL Postgres instance, DB, and user
+## 3. Create the Cloud SQL MySQL instance, DB, and user
+The app uses **MySQL** (via PyMySQL); `db-f1-micro` supports MySQL cheaply (~$8–9/mo).
 ```sh
 gcloud sql instances create "$DB_INSTANCE" \
-  --database-version=POSTGRES_16 --tier=db-f1-micro --region="$REGION"
+  --database-version=MYSQL_8_0 --tier=db-f1-micro --region="$REGION"
 gcloud sql databases create "$DB_NAME" --instance="$DB_INSTANCE"
 gcloud sql users create "$DB_USER" --instance="$DB_INSTANCE" --password="$DB_PASSWORD"
 
@@ -48,11 +49,12 @@ echo "Cloud SQL connection name: $ICN"   # looks like PROJECT:REGION:packwell-db
 
 ## 4. Store secrets (Django key + full DATABASE_URL)
 The DATABASE_URL uses the Cloud SQL **socket** — no public host, IAM-authenticated.
+(MySQL uses `unix_socket=`; note the `mysql://` scheme.)
 ```sh
 python3 -c 'import secrets; print(secrets.token_urlsafe(50))' \
   | gcloud secrets create packwell-secret-key --data-file=-
 
-printf '%s' "postgres://$DB_USER:$DB_PASSWORD@/$DB_NAME?host=/cloudsql/$ICN" \
+printf '%s' "mysql://$DB_USER:$DB_PASSWORD@/$DB_NAME?unix_socket=/cloudsql/$ICN" \
   | gcloud secrets create packwell-database-url --data-file=-
 ```
 
@@ -103,8 +105,8 @@ Google auto-provisions the TLS cert (can take ~15–60 min). Then visit
 Run it against the prod DB through the Cloud SQL proxy from your machine:
 ```sh
 # install: https://cloud.google.com/sql/docs/postgres/sql-proxy
-cloud-sql-proxy "$ICN" &           # listens on 127.0.0.1:5432
-DATABASE_URL="postgres://$DB_USER:$DB_PASSWORD@127.0.0.1:5432/$DB_NAME" \
+cloud-sql-proxy "$ICN" &           # listens on 127.0.0.1:3306 for MySQL
+DATABASE_URL="mysql://$DB_USER:$DB_PASSWORD@127.0.0.1:3306/$DB_NAME" \
   SECRET_KEY=x .venv/bin/python manage.py createsuperuser
 ```
 

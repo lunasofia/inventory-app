@@ -80,8 +80,15 @@ gcloud run deploy packwell \
   --allow-unauthenticated \
   --add-cloudsql-instances="$ICN" \
   --set-secrets=SECRET_KEY=packwell-secret-key:latest,DATABASE_URL=packwell-database-url:latest \
-  --set-env-vars="^@^DEBUG=False@ALLOWED_HOSTS=.run.app,packwell.lfrankreese.com@CSRF_TRUSTED_ORIGINS=https://*.run.app,https://packwell.lfrankreese.com"
+  --set-env-vars="^@^DEBUG=False@REQUIRE_REAL_DB=True@ALLOWED_HOSTS=.run.app,packwell.lfrankreese.com@CSRF_TRUSTED_ORIGINS=https://*.run.app,https://packwell.lfrankreese.com"
 ```
+> **Important — always include the DB flags on every deploy.** Cloud Run keeps
+> prior config on a bare `--source` redeploy, but if you ever re-run with
+> `--set-secrets`/`--set-env-vars`/`--add-cloudsql-instances`, re-specify *all*
+> of them together — those flags **replace** (not merge) their category.
+> `REQUIRE_REAL_DB=True` makes the container crash loudly (visible in logs)
+> rather than silently fall back to ephemeral SQLite and lose data.
+
 On success gcloud prints a `https://packwell-XXXXX.run.app` URL. Open it — the
 container ran migrations on boot, so the DB is ready. **Sign up** through the
 site to create your account (no superuser needed to use the app).

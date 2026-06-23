@@ -86,6 +86,17 @@ DATABASES = {
     )
 }
 
+# Guard against silently running on ephemeral in-container SQLite in production
+# (Cloud Run wipes the container filesystem on every new revision -> data loss).
+# Set REQUIRE_REAL_DB=True at runtime on Cloud Run; leave unset for build/local/tests.
+if env.bool('REQUIRE_REAL_DB', default=False) and 'sqlite' in DATABASES['default']['ENGINE']:
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(
+        'REQUIRE_REAL_DB is set but the database resolved to SQLite. '
+        'DATABASE_URL (the Cloud SQL connection) is missing — refusing to start '
+        'on ephemeral storage to avoid data loss.'
+    )
+
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},

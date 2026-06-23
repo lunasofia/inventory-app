@@ -14,6 +14,7 @@
     </div>
     <div class="form-actions">
       {% if can_edit %}<button class="btn primary" type="button" onclick="openModal('add-item-modal')">＋ Add item</button>{% endif %}
+      {% if permission == 'owner' %}<button class="btn" type="button" onclick="openModal('share-modal')">Share</button>{% endif %}
       <a class="btn" href="{% url 'save_as_template' trip.pk %}">Save as template</a>
       <a class="btn" href="{% url 'template_diff' trip.pk %}">Update template…</a>
       {% if can_edit %}<a class="btn" href="{% url 'trip_edit' trip.pk %}">Edit trip</a>{% endif %}
@@ -26,5 +27,16 @@
 
 {% if can_edit %}
   <button class="fab" type="button" onclick="openModal('add-item-modal')" aria-label="Add item">＋</button>
+{% endif %}
+
+{% if permission == 'owner' %}
+  <div class="modal" id="share-modal">
+    <div class="modal-scrim" onclick="closeModal('share-modal')"></div>
+    <div class="modal-card">
+      <h2>Share “{{ trip.name }}”</h2>
+      <p class="muted" style="margin-top:-0.5rem">People you add can view or edit this trip's list.</p>
+      {% include 'trips/_share_panel.html' %}
+    </div>
+  </div>
 {% endif %}
 {% endblock %}

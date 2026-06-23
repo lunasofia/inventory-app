@@ -28,7 +28,7 @@
         </div>
         {% for t in sidebar_trips %}
           <a class="trip-link {% if trip and trip.pk == t.pk %}active{% endif %}" href="{% url 'trip_detail' t.pk %}">
-            <span class="trip-link-name">{{ t.name }}</span>
+            <span class="trip-link-name">{{ t.name }}{% if t.owner != user %} <span class="tag">shared</span>{% endif %}</span>
             {% if t.destination %}<span class="trip-link-dest">⌖ {{ t.destination }}</span>{% endif %}
             <span class="mini-progress"><span style="width: {{ t.progress_pct }}%"></span></span>
             <span class="mini-count">{{ t.packed_count }}/{{ t.total_count }} packed</span>
@@ -87,6 +87,13 @@
     var sug = document.getElementById('item-suggestions');
     if (sug) sug.innerHTML = '';
     form.querySelector('[name=name]').focus();
+  }
+  function pickCollaborator(el) {
+    var f = document.getElementById('share-add-form');
+    if (!f) return;
+    f.querySelector('[name=email]').value = el.dataset.email;
+    var s = document.getElementById('collab-suggestions');
+    if (s) s.innerHTML = '';
   }
 </script>
 {% block extra_js %}{% endblock %}

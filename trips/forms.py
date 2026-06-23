@@ -2,7 +2,9 @@ from django import forms
 
 from catalog.models import Category
 
-from .models import Bag, PackingItem, Template, TemplateItem, Trip
+from accounts.models import User
+
+from .models import Bag, PackingItem, Template, TemplateItem, Trip, TripShare
 
 
 class TripForm(forms.ModelForm):
@@ -179,3 +181,32 @@ class BagForm(forms.ModelForm):
         if dupes.exists():
             raise forms.ValidationError('You already have a bag with that name.')
         return name
+
+
+class TripShareForm(forms.Form):
+    """Share a trip with a registered user by email, with view/edit permission."""
+
+    email = forms.EmailField(widget=forms.EmailInput(attrs={
+        'placeholder': 'collaborator@email.com', 'autocomplete': 'off',
+    }))
+    permission = forms.ChoiceField(
+        choices=TripShare.Permission.choices, initial=TripShare.Permission.EDIT,
+    )
+
+    def __init__(self, *args, trip=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.trip = trip
+
+    def clean(self):
+        cleaned = super().clean()
+        email = (cleaned.get('email') or '').strip()
+        if not email:
+            return cleaned
+        user = User.objects.filter(email__iexact=email).first()
+        if user is None:
+            self.add_error('email', 'No Packwell account with that email.')
+        elif self.trip and user == self.trip.owner:
+            self.add_error('email', 'You already own this trip.')
+        else:
+            cleaned['user'] = user
+        return cleaned

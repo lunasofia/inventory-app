@@ -22,6 +22,11 @@ urlpatterns = [
     path('trips/<int:pk>/bags/<int:bag_pk>/edit/', views.bag_edit, name='bag_edit'),
     path('trips/<int:pk>/bags/<int:bag_pk>/delete/', views.bag_delete, name='bag_delete'),
     path('trips/<int:pk>/bags/<int:bag_pk>/mark/', views.bag_mark, name='bag_mark'),
+    # Sharing (owner-only)
+    path('trips/<int:pk>/share/add/', views.share_add, name='share_add'),
+    path('trips/<int:pk>/share/suggest/', views.collaborator_suggest, name='collaborator_suggest'),
+    path('trips/<int:pk>/share/<int:share_pk>/update/', views.share_update, name='share_update'),
+    path('trips/<int:pk>/share/<int:share_pk>/revoke/', views.share_revoke, name='share_revoke'),
     # Templates / reuse
     path('templates/', views.template_list, name='template_list'),
     path('trips/<int:pk>/save-template/', views.save_as_template, name='save_as_template'),

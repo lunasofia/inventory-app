@@ -1,0 +1,5 @@
+{% for p in people %}
+  <button type="button" class="suggestion" data-email="{{ p.email }}" onclick="pickCollaborator(this)">
+    {{ p.short_name }} <span class="muted">· {{ p.email }}</span>
+  </button>
+{% endfor %}

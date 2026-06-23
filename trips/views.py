@@ -1,12 +1,14 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import F, Max
+from django.db.models import F, Max, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from catalog.models import Category, Condition, Item
+
+from accounts.models import User
 
 from .forms import (
     BagForm,
@@ -15,8 +17,9 @@ from .forms import (
     TemplateForm,
     TemplateItemForm,
     TripForm,
+    TripShareForm,
 )
-from .models import Bag, PackingItem, Template, TemplateItem, Trip
+from .models import Bag, PackingItem, Template, TemplateItem, Trip, TripShare
 
 
 def _resolve_owner_category(owner, category):
@@ -158,6 +161,8 @@ def trip_detail(request, pk):
     # Default the view lens to "by bag" on each full page load.
     request.session[f'group_mode_{trip.pk}'] = 'bag'
     context = _planning_context(request, trip, permission)
+    if permission == 'owner':
+        context.update(_share_context(request, trip))
     return render(request, 'trips/trip_detail.html', context)
 
 
@@ -676,3 +681,75 @@ def item_suggest(request, pk):
     if query:
         suggestions = Item.objects.filter(owner=request.user, name__icontains=query)[:8]
     return render(request, 'trips/_item_suggestions.html', {'suggestions': suggestions})
+
+
+# --- sharing -----------------------------------------------------------------
+
+def _get_owned_trip_or_404(user, pk):
+    return get_object_or_404(Trip, pk=pk, owner=user)
+
+
+def _recent_collaborators(user):
+    """Users this person has collaborated with, either direction: people they've
+    shared their trips with, plus owners who've shared trips with them."""
+    return User.objects.filter(
+        Q(shared_trips__trip__owner=user) | Q(trips__shares__shared_with=user)
+    ).exclude(pk=user.pk).distinct()
+
+
+def _share_context(request, trip, form=None):
+    return {
+        'trip': trip,
+        'shares': trip.shares.select_related('shared_with'),
+        'share_form': form if form is not None else TripShareForm(trip=trip),
+    }
+
+
+def _render_share_panel(request, trip, form=None):
+    return render(request, 'trips/_share_panel.html', _share_context(request, trip, form))
+
+
+@login_required
+@require_POST
+def share_add(request, pk):
+    trip = _get_owned_trip_or_404(request.user, pk)
+    form = TripShareForm(request.POST, trip=trip)
+    if form.is_valid():
+        TripShare.objects.update_or_create(
+            trip=trip, shared_with=form.cleaned_data['user'],
+            defaults={'permission': form.cleaned_data['permission']},
+        )
+        return _render_share_panel(request, trip)
+    return _render_share_panel(request, trip, form=form)
+
+
+@login_required
+@require_POST
+def share_update(request, pk, share_pk):
+    trip = _get_owned_trip_or_404(request.user, pk)
+    share = get_object_or_404(TripShare, pk=share_pk, trip=trip)
+    permission = request.POST.get('permission')
+    if permission in dict(TripShare.Permission.choices):
+        share.permission = permission
+        share.save(update_fields=['permission'])
+    return _render_share_panel(request, trip)
+
+
+@login_required
+@require_POST
+def share_revoke(request, pk, share_pk):
+    trip = _get_owned_trip_or_404(request.user, pk)
+    get_object_or_404(TripShare, pk=share_pk, trip=trip).delete()
+    return _render_share_panel(request, trip)
+
+
+@login_required
+def collaborator_suggest(request, pk):
+    """Autocomplete recent collaborators (excluding those already on this trip)."""
+    trip = _get_owned_trip_or_404(request.user, pk)
+    query = request.GET.get('email', '').strip()
+    already = trip.shares.values_list('shared_with_id', flat=True)
+    people = _recent_collaborators(request.user).exclude(pk__in=already)
+    if query:
+        people = people.filter(Q(email__icontains=query) | Q(display_name__icontains=query))
+    return render(request, 'trips/_collaborator_suggestions.html', {'people': people[:8]})

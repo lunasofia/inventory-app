@@ -289,6 +289,35 @@ page linked from Profile.
 - Trips remember their **origin template** (`Trip.origin_template`).
 - v1 templates capture **name + category + quantity** only (bags deferred).
 
+## 19. Sharing (Task #8)
+
+Owner shares a trip with registered users (view/edit). Share UI is a modal from
+the trip header (owner only).
+
+| # | Steps | Expected |
+|---|-------|----------|
+| 19.1 | As owner, click "Share" | Modal opens: current collaborators + add-by-email form |
+| 19.2 | Add a registered user's email, "Can edit" | Added; appears in the list |
+| 19.3 | Email with no account | Rejected: "No Packwell account with that email." |
+| 19.4 | Your own email | Rejected: "You already own this trip." |
+| 19.5 | Re-add an existing collaborator | No duplicate; updates their permission |
+| 19.6 | Start typing in the email field | Recent collaborators (people you've shared with / been shared by) are suggested; clicking fills the email |
+| 19.7 | Change a collaborator view↔edit | Permission updates; takes effect immediately |
+| 19.8 | Remove a collaborator | Gone from list; trip leaves their sidebar; their access 404s |
+| 19.9 | Edit-collaborator logs in | Trip shows in sidebar with "shared" tag; can add/edit/check off |
+| 19.10 | View-collaborator logs in | Trip read-only; mutating endpoints 404 |
+| 19.11 | Non-owner hits any share endpoint | 404 (only the owner manages sharing) |
+| 19.12 | Owner deletes the trip | Disappears from all collaborators' sidebars |
+
+## Resolved design decisions (Sharing)
+
+- Registered users only (by email); unknown email rejected. Owner-only manages
+  sharing; permissions view/edit; owner keeps delete + manage-sharing.
+- Re-adding updates permission (no duplicate). Revoke cuts access immediately.
+- **Recent collaborators** suggested from prior shares (both directions);
+  no new model. No notifications; async last-write-wins; recipient self-leave
+  deferred. Reuses the existing access helpers — no model changes.
+
 ## Resolved design decisions (Bags)
 
 - **Per-trip bags** (no reusable "bags I own" library yet; reuse comes via
@@ -305,8 +334,10 @@ page linked from Profile.
 - **Covered through Task #6 + category management:** auth, profiles, dashboard,
   trip CRUD, the packing-list planning view, bags/containers, check-off packing
   mode, templates/reuse (incl. the diff/drift flow), and category add/rename/delete.
-- **Not yet covered (future tasks):** unpacking mode (Task 7); sharing UI
-  (Task 8); exit page (#13); people (#14); buy-when-there (#15). Deferred: bag
-  (re)assignment during packing; templates capturing bags; sharing templates/
-  catalog items.
+- **Also covered:** category management, the Packwell UI overhaul (sidebar +
+  unified trip board), and **sharing** (Task #8, incl. recent collaborators).
+- **Not yet covered (future tasks):** unpacking mode (Task 7); exit page (#13);
+  people (#14); buy-when-there (#15); category-level marking (#16). Deferred:
+  bag (re)assignment during packing; templates capturing bags; sharing
+  templates/catalog items; sharing notifications + recipient self-leave.
 - Update this file as each task lands so the checklist stays in sync.

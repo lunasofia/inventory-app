@@ -3,7 +3,9 @@ from django.urls import reverse
 
 from catalog.models import Item
 from tests.conftest import category_id
-from trips.models import PackingItem, Template, TemplateItem, TemplateShare, Trip
+from trips.models import (
+    PackingItem, Template, TemplateItem, TemplateReminder, TemplateShare, Trip,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -137,6 +139,27 @@ def test_cannot_touch_others_template(client, other_user, user):
     client.force_login(other_user)
     assert client.get(reverse('template_detail', args=[tpl.pk])).status_code == 404
     assert client.post(reverse('template_delete', args=[tpl.pk])).status_code == 404
+
+
+def test_view_only_collaborator_cannot_edit_template_reminders(client, other_user, user):
+    tpl = make_template(user)
+    rem = TemplateReminder.objects.create(template=tpl, text='Check the safe')
+    TemplateShare.objects.create(template=tpl, shared_with=other_user, permission='view')
+    client.force_login(other_user)
+    assert client.post(reverse('template_reminder_add', args=[tpl.pk]),
+                       {'text': 'sneaky'}).status_code == 404
+    assert client.post(reverse('template_reminder_delete', args=[tpl.pk, rem.pk])).status_code == 404
+    assert tpl.reminders.filter(pk=rem.pk).exists()            # not deleted
+    assert not tpl.reminders.filter(text='sneaky').exists()    # not added
+
+
+def test_edit_collaborator_can_edit_template_reminders(client, other_user, user):
+    tpl = make_template(user)
+    TemplateShare.objects.create(template=tpl, shared_with=other_user, permission='edit')
+    client.force_login(other_user)
+    assert client.post(reverse('template_reminder_add', args=[tpl.pk]),
+                       {'text': 'Wallet'}).status_code == 200
+    assert tpl.reminders.filter(text='Wallet').exists()
 
 
 def test_view_only_user_can_save_trip_as_own_template(client, other_user, user, trip):

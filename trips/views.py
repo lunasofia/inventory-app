@@ -396,7 +396,7 @@ def save_as_template(request, pk):
 
 @login_required
 def template_list(request):
-    templates = Template.accessible_by(request.user).prefetch_related('items', 'owner')
+    templates = Template.accessible_by(request.user).select_related('owner').prefetch_related('items')
     return render(request, 'trips/template_list.html', {'templates': templates})
 
 
@@ -1011,7 +1011,7 @@ def _render_template_reminders(request, template):
 @login_required
 @require_POST
 def template_reminder_add(request, pk):
-    template, _ = _get_template_or_404(request.user, pk)
+    template, _ = _get_template_or_404(request.user, pk, require_edit=True)
     form = ReminderForm(request.POST)
     if form.is_valid():
         order = (template.reminders.aggregate(m=Max('sort_order'))['m'] or 0) + 1
@@ -1022,6 +1022,6 @@ def template_reminder_add(request, pk):
 @login_required
 @require_POST
 def template_reminder_delete(request, pk, reminder_pk):
-    template, _ = _get_template_or_404(request.user, pk)
+    template, _ = _get_template_or_404(request.user, pk, require_edit=True)
     get_object_or_404(TemplateReminder, pk=reminder_pk, template=template).delete()
     return _render_template_reminders(request, template)

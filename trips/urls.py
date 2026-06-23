@@ -29,6 +29,7 @@ urlpatterns = [
     path('trips/<int:pk>/share/<int:share_pk>/revoke/', views.share_revoke, name='share_revoke'),
     # Templates / reuse
     path('templates/', views.template_list, name='template_list'),
+    path('templates/new/', views.template_create, name='template_create'),
     path('trips/<int:pk>/save-template/', views.save_as_template, name='save_as_template'),
     path('trips/<int:pk>/diff/', views.template_diff, name='template_diff'),
     path('templates/<int:pk>/', views.template_detail, name='template_detail'),

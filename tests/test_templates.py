@@ -36,6 +36,30 @@ def test_template_name_unique_per_owner(auth_client, user, trip):
     assert Template.objects.filter(owner=user).count() == 1
 
 
+def test_template_create_get_renders(auth_client):
+    resp = auth_client.get(reverse('template_create'))
+    assert resp.status_code == 200
+    assert b'Create template' in resp.content
+
+
+def test_template_create_posts_and_redirects(auth_client, user):
+    resp = auth_client.post(reverse('template_create'), {
+        'name': 'New baseline',
+        'description': 'A new reusable list',
+    })
+    assert resp.status_code == 302
+    tpl = Template.objects.get(owner=user, name='New baseline')
+    assert tpl.description == 'A new reusable list'
+
+
+def test_template_create_duplicate_name_shows_error(auth_client, user):
+    make_template(user, 'Dup')
+    resp = auth_client.post(reverse('template_create'), {'name': 'dup'})
+    assert resp.status_code == 200
+    assert b'already have a template with that name' in resp.content
+    assert Template.objects.filter(owner=user).count() == 1
+
+
 # --- create a trip from a template ---
 
 def test_create_trip_from_template_clones_and_links(auth_client, user):

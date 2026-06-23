@@ -392,6 +392,21 @@ def template_list(request):
     return render(request, 'trips/template_list.html', {'templates': templates})
 
 
+@login_required
+def template_create(request):
+    if request.method == 'POST':
+        form = TemplateForm(request.POST, owner=request.user)
+        if form.is_valid():
+            template = form.save(commit=False)
+            template.owner = request.user
+            template.save()
+            messages.success(request, f'Created template "{template.name}".')
+            return redirect('template_detail', pk=template.pk)
+    else:
+        form = TemplateForm(owner=request.user)
+    return render(request, 'trips/template_form.html', {'form': form, 'mode': 'new'})
+
+
 def _template_context(request, template, add_form=None):
     return {
         'template': template,

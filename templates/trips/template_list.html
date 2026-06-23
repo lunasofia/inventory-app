@@ -1,7 +1,10 @@
 {% extends 'base.html' %}
 {% block title %}Templates · Packlist{% endblock %}
 {% block content %}
-<div class="page-head"><h1>Templates</h1></div>
+<div class="page-head">
+  <h1>Templates</h1>
+  <a class="btn" href="{% url 'template_create' %}">New template</a>
+</div>
 
 {% if templates %}
   <ul class="trip-list">

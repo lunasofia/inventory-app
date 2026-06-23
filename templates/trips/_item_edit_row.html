@@ -1,4 +1,4 @@
-<li class="trip-card item-row editing" id="item-{{ item.pk }}">
+<li class="item editing" id="item-{{ item.pk }}">
   <form class="item-edit-form"
         hx-post="{% url 'item_edit' trip.pk item.pk %}"
         hx-target="#planning" hx-swap="outerHTML">
@@ -11,7 +11,5 @@
             hx-get="{% url 'item_row' trip.pk item.pk %}"
             hx-target="#item-{{ item.pk }}" hx-swap="outerHTML">Cancel</button>
   </form>
-  {% if form.errors %}
-    <p class="field-error">{{ form.name.errors.0 }}{{ form.quantity.errors.0 }}</p>
-  {% endif %}
+  {% if form.errors %}<p class="field-error">{{ form.name.errors.0 }}{{ form.quantity.errors.0 }}</p>{% endif %}
 </li>

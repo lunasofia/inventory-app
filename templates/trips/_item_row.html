@@ -1,18 +1,32 @@
-<li class="trip-card item-row" id="item-{{ item.pk }}">
-  <span class="item-main">
-    {% if item.packed %}<span class="packed-dot" title="Packed">✓</span>{% endif %}
-    {{ item.quantity }}× {{ item.name }}
-    {% if item.bag %}<span class="bag-tag">{{ item.bag.name }}</span>{% endif %}
-  </span>
+<li class="item {% if item.packed %}packed{% endif %}" id="item-{{ item.pk }}">
   {% if can_edit %}
+    <button class="item-toggle" type="button"
+            hx-post="{% url 'item_toggle' item.trip_id item.pk %}"
+            hx-target="#planning" hx-swap="outerHTML">
+      <span class="checkbox">✓</span>
+      <span class="item-label"><span class="item-qty">{{ item.quantity }}×</span> {{ item.name }}</span>
+    </button>
+    <span class="item-chips">
+      {% if group_mode != 'category' and item.category %}<span class="chip cat-{{ item.category.name|lower }}">{{ item.category.name }}</span>{% endif %}
+      {% if group_mode != 'bag' and item.bag %}<span class="chip">{{ item.bag.name }}</span>{% endif %}
+    </span>
     <span class="item-actions">
-      <button class="linkbtn" type="button"
+      <button class="linkbtn" type="button" title="Edit"
               hx-get="{% url 'item_edit' item.trip_id item.pk %}"
-              hx-target="#item-{{ item.pk }}" hx-swap="outerHTML">Edit</button>
-      <button class="linkbtn danger" type="button"
+              hx-target="#item-{{ item.pk }}" hx-swap="outerHTML">✎</button>
+      <button class="linkbtn danger" type="button" title="Remove"
               hx-post="{% url 'item_delete' item.trip_id item.pk %}"
               hx-target="#planning" hx-swap="outerHTML"
-              hx-confirm="Remove {{ item.name }}?">Remove</button>
+              hx-confirm="Remove {{ item.name }}?">✕</button>
+    </span>
+  {% else %}
+    <span class="item-toggle readonly">
+      <span class="checkbox">✓</span>
+      <span class="item-label"><span class="item-qty">{{ item.quantity }}×</span> {{ item.name }}</span>
+    </span>
+    <span class="item-chips">
+      {% if group_mode != 'category' and item.category %}<span class="chip cat-{{ item.category.name|lower }}">{{ item.category.name }}</span>{% endif %}
+      {% if group_mode != 'bag' and item.bag %}<span class="chip">{{ item.bag.name }}</span>{% endif %}
     </span>
   {% endif %}
 </li>

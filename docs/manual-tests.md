@@ -1,7 +1,16 @@
 # Manual Test Plan
 
-Manual regression checklist for Packlist. Re-run the relevant section after
+Manual regression checklist for **Packwell**. Re-run the relevant section after
 changes to avoid regressions.
+
+> **UI overhaul (2026-06-23):** adopted the Packwell design (Django+HTMX, no
+> React). The app now has a **persistent left sidebar** (trip list w/ progress;
+> mobile drawer + top bar), and **planning + packing are merged into one trip
+> board** with a **By bag / By category / All items** toggle, tap-to-toggle
+> rows, per-row edit/delete, and an add-item modal/FAB. The separate "Packing
+> mode" page is **retired** (check-off is inline). The home route (`/`)
+> **redirects to your most relevant trip** (or a welcome screen if you have
+> none). Sections below reflect this.
 
 > Most of this checklist is now also covered by the **automated suite** (`make
 > test` / `pytest`, run in CI on every push) — see `tests/`. This manual plan
@@ -56,10 +65,10 @@ Legend: each case lists **Steps → Expected**. ✅ = pass, mark the date/result
 
 | # | Steps | Expected |
 |---|-------|----------|
-| 4.1 | Brand-new account with no trips → dashboard | "No trips yet" empty state under Active; no Completed section |
-| 4.2 | With ≥1 active trip | Trip appears as a card under Active; card links to its detail page |
-| 4.3 | Trip with status "Complete" | Appears under a separate Completed section, dimmed |
-| 4.4 | Card display | Shows name, destination (if set), status badge, and `packed/total` count |
+| 4.1 | Brand-new account with no trips → visit `/` | "Welcome to Packwell" screen with a "Create your first trip" button |
+| 4.2 | With ≥1 trip → visit `/` | Redirects to your most relevant (non-complete) trip |
+| 4.3 | The sidebar (desktop) / drawer (mobile) | Lists all your trips (owned + shared) with per-trip progress bars; current trip highlighted |
+| 4.4 | Sidebar trip entry | Shows name, destination, mini progress bar, and `packed/total` count; links to the trip |
 
 ## 5. Trip — create
 
@@ -197,26 +206,26 @@ be assigned to one; the list can be grouped by bag or category.
 | 15.13 | Reload the page | Bags, assignments, and grouping default (category) persist; statuses persist |
 | 15.14 | View-only shared user | Sees bags + can toggle lens; no add/rename/delete/assign/mark controls; direct POSTs → 404 |
 
-## 16. Check-off packing mode (Task #5)
+## 16. Unified trip board — check-off & views
 
-A focused page at `/trips/<pk>/pack/`, reached via "🎒 Packing mode" on the
-trip page. Check-off only (editing stays on the planning view).
+The single trip screen (`/trips/<pk>/`) merges planning and packing.
 
 | # | Steps | Expected |
 |---|-------|----------|
-| 16.1 | Click "Packing mode" on a trip | Focused packing page loads; item list with check controls + progress; no add/edit controls |
-| 16.2 | "Edit list" link | Returns to the planning view |
-| 16.3 | Tap an unpacked item | Becomes packed (checked, dimmed, struck through) without full reload |
-| 16.4 | Tap a packed item | Toggles back to unpacked |
-| 16.5 | Packed item position | Stays in place in its group |
-| 16.6 | Check items off | Overall progress bar + "N/total packed" update live; per-group counts update |
-| 16.7 | Check the last remaining item | Progress hits 100%; "All packed" message shown |
-| 16.8 | Uncheck from 100% | Message clears; progress drops |
-| 16.9 | Toggle "Group by: Bag" | Regroups by bag (alphabetical, Unbagged last); check states unchanged |
-| 16.10 | "Pack all" on a bag heading (bag view) | All items in the bag check off; progress jumps; offers "Unpack all" |
-| 16.11 | Open packing mode for a trip with no items | Friendly empty state linking back to add items |
-| 16.12 | View-only shared user | Sees list + progress read-only; no check controls; direct POST to toggle/bag-mark → 404 |
-| 16.13 | Reload after checking items; also view planning page | Packed states persist and are reflected on the planning view (shared field) |
+| 16.1 | Open a trip | One screen: header + progress, bag summary strip, By bag/By category/All items toggle, grouped item rows |
+| 16.2 | Tap an item row | Toggles packed (checkbox fills, label dims/strikes) without a full reload |
+| 16.3 | Tap a packed row | Toggles back to unpacked |
+| 16.4 | Check items off | Overall progress bar + "N/total" update live; bag-strip counts update |
+| 16.5 | Check the last remaining item | Progress hits 100%; "All packed" message shown |
+| 16.6 | Switch to "By bag" | Groups become bags (alphabetical, Unbagged last); "Pack all/Unpack all" per bag |
+| 16.7 | Switch to "By category" | Groups become categories |
+| 16.8 | Switch to "All items" | Two groups: "To pack — N" and "Packed — N"; each row shows category + bag chips |
+| 16.9 | "Pack all" on a bag heading (by-bag view) | All items in the bag check off; progress jumps; offers "Unpack all" |
+| 16.10 | Per-row edit (✎) / delete (✕) | Edit opens an inline edit row; delete confirms and removes; both update the board |
+| 16.11 | "Add item" button / mobile FAB | Opens the add-item modal/sheet; adding updates the board and closes the modal |
+| 16.12 | View-only shared user | Sees the board read-only; no toggle/edit/add controls; direct POST to toggle/add/etc. → 404 |
+| 16.13 | Reload after checking items | Packed states persist |
+| 16.14 | Open the trip on a narrow viewport | Sidebar collapses to a hamburger→drawer; FAB shows; bag strip scrolls horizontally |
 
 ## 17. Templates / reuse (Task #6)
 

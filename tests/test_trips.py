@@ -52,12 +52,16 @@ def test_owner_can_delete(auth_client, trip):
     assert not Trip.objects.filter(pk=trip.pk).exists()
 
 
-def test_dashboard_groups_active_and_complete(auth_client, user):
-    Trip.objects.create(owner=user, name='Active one', status='planning')
+def test_dashboard_redirects_to_a_trip_when_present(auth_client, user):
+    active = Trip.objects.create(owner=user, name='Active one', status='planning')
     Trip.objects.create(owner=user, name='Done one', status='complete')
     resp = auth_client.get(reverse('dashboard'))
+    # Home jumps to the most relevant (non-complete) trip; list lives in sidebar.
+    assert resp.status_code == 302
+    assert resp.url == reverse('trip_detail', args=[active.pk])
+
+
+def test_dashboard_welcome_when_no_trips(auth_client):
+    resp = auth_client.get(reverse('dashboard'))
     assert resp.status_code == 200
-    names_active = [t.name for t in resp.context['active_trips']]
-    names_done = [t.name for t in resp.context['complete_trips']]
-    assert 'Active one' in names_active
-    assert 'Done one' in names_done
+    assert b'Welcome to Packwell' in resp.content

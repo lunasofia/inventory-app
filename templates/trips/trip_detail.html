@@ -1,65 +1,30 @@
 {% extends 'base.html' %}
-{% block title %}{{ trip.name }} · Packlist{% endblock %}
+{% block title %}{{ trip.name }} · Packwell{% endblock %}
 {% block content %}
-<div class="page-head">
-  <div>
-    <h1>{{ trip.name }}</h1>
-    <p class="muted">
-      {% if trip.destination %}{{ trip.destination }} · {% endif %}
-      <span class="status status-{{ trip.status }}">{{ trip.get_status_display }}</span>
-      {% if permission != 'owner' %}<span class="tag">shared · {{ permission }}</span>{% endif %}
-    </p>
-  </div>
-  <div class="form-actions">
-    <a class="btn primary" href="{% url 'packing_mode' trip.pk %}">🎒 Packing mode</a>
-    <a class="btn" href="{% url 'save_as_template' trip.pk %}">Save as template</a>
-    <a class="btn" href="{% url 'template_diff' trip.pk %}">Update template…</a>
-    {% if can_edit %}
-      <a class="btn" href="{% url 'trip_edit' trip.pk %}">Edit</a>
-      {% if permission == 'owner' %}
-        <a class="btn" href="{% url 'trip_delete' trip.pk %}">Delete</a>
-      {% endif %}
-    {% endif %}
+<div class="trip-header">
+  <div class="page-head">
+    <div>
+      <h1>{{ trip.name }}</h1>
+      <div class="trip-meta-row">
+        {% if trip.destination %}<span>⌖ {{ trip.destination }}</span>{% endif %}
+        {% if trip.start_date %}<span>🗓 {{ trip.start_date }} – {{ trip.end_date|default:"?" }}</span>{% endif %}
+        <span class="status status-{{ trip.status }}">{{ trip.get_status_display }}</span>
+        {% if permission != 'owner' %}<span class="tag">shared · {{ permission }}</span>{% endif %}
+      </div>
+    </div>
+    <div class="form-actions">
+      {% if can_edit %}<button class="btn primary" type="button" onclick="openModal('add-item-modal')">＋ Add item</button>{% endif %}
+      <a class="btn" href="{% url 'save_as_template' trip.pk %}">Save as template</a>
+      <a class="btn" href="{% url 'template_diff' trip.pk %}">Update template…</a>
+      {% if can_edit %}<a class="btn" href="{% url 'trip_edit' trip.pk %}">Edit trip</a>{% endif %}
+      {% if permission == 'owner' %}<a class="btn" href="{% url 'trip_delete' trip.pk %}">Delete</a>{% endif %}
+    </div>
   </div>
 </div>
 
-<div class="card">
-  <dl class="meta-grid">
-    <dt>Dates</dt>
-    <dd>{% if trip.start_date %}{{ trip.start_date }} → {{ trip.end_date|default:"?" }}{% else %}<span class="muted">Not set</span>{% endif %}</dd>
-    <dt>Owner</dt>
-    <dd>{{ trip.owner.short_name }}</dd>
-    {% if trip.notes %}
-      <dt>Notes</dt>
-      <dd>{{ trip.notes|linebreaksbr }}</dd>
-    {% endif %}
-  </dl>
-</div>
-
-<section>
-  <h2>Packing list</h2>
-  {% include 'trips/_planning.html' %}
-</section>
+{% include 'trips/_planning.html' %}
 
 {% if can_edit %}
-<script>
-  // Fill the add-item form from a chosen autocomplete suggestion.
-  function pickSuggestion(el) {
-    var form = document.getElementById('add-item-form');
-    if (!form) return;
-    form.querySelector('[name=name]').value = el.dataset.name;
-    var cat = form.querySelector('[name=category]');
-    if (cat) cat.value = el.dataset.category || '';
-    document.getElementById('item-suggestions').innerHTML = '';
-    form.querySelector('[name=name]').focus();
-  }
-  // After the planning region swaps in, refocus the add-item field.
-  document.body.addEventListener('htmx:afterSwap', function (e) {
-    if (e.target && e.target.id === 'planning') {
-      var name = document.querySelector('#add-item-form [name=name]');
-      if (name) name.focus();
-    }
-  });
-</script>
+  <button class="fab" type="button" onclick="openModal('add-item-modal')" aria-label="Add item">＋</button>
 {% endif %}
 {% endblock %}

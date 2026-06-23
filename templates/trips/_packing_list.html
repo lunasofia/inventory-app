@@ -1,37 +1,32 @@
 <div id="packing-list">
-  <div class="progress">
-    <div class="progress-track"><span style="width: {{ trip.progress_pct }}%"></span></div>
-    <span class="muted progress-label">{{ trip.packed_count }}/{{ trip.total_count }} packed</span>
-  </div>
-
   {% if groups %}
     {% for heading, bag, items in groups %}
-      <div class="group">
-        <h3 class="cat-head">
-          <span>{{ heading }}</span>
-          {% if bag %}
-            <span class="bag-status">
-              <span class="muted">{{ bag.packed_count }}/{{ bag.total_count }} packed</span>
-              {% if can_edit %}
-                {% if bag.is_packed %}
-                  <button class="linkbtn" type="button"
-                          hx-post="{% url 'bag_mark' trip.pk bag.pk %}" hx-vals='{"packed": "false"}'
-                          hx-target="#planning" hx-swap="outerHTML">Mark unpacked</button>
-                {% else %}
-                  <button class="linkbtn" type="button"
-                          hx-post="{% url 'bag_mark' trip.pk bag.pk %}" hx-vals='{"packed": "true"}'
-                          hx-target="#planning" hx-swap="outerHTML">Mark packed</button>
-                {% endif %}
+      <div class="group-card">
+        <div class="group-head">
+          <span class="icon-chip">{{ heading|first|upper }}</span>
+          <div class="group-title"><span class="name">{{ heading }}</span></div>
+          <div class="group-head-meta">
+            {% if bag and bag.is_packed %}<span class="badge-packed">Packed</span>{% endif %}
+            <span class="count">{{ items|length }}</span>
+            {% if bag and can_edit %}
+              {% if bag.is_packed %}
+                <button class="linkbtn" type="button"
+                        hx-post="{% url 'bag_mark' trip.pk bag.pk %}" hx-vals='{"packed": "false"}'
+                        hx-target="#planning" hx-swap="outerHTML">Unpack all</button>
+              {% else %}
+                <button class="linkbtn" type="button"
+                        hx-post="{% url 'bag_mark' trip.pk bag.pk %}" hx-vals='{"packed": "true"}'
+                        hx-target="#planning" hx-swap="outerHTML">Pack all</button>
               {% endif %}
-            </span>
-          {% endif %}
-        </h3>
-        <ul class="trip-list">
+            {% endif %}
+          </div>
+        </div>
+        <ul class="items">
           {% for item in items %}{% include 'trips/_item_row.html' %}{% endfor %}
         </ul>
       </div>
     {% endfor %}
   {% else %}
-    <p class="muted empty">No items yet.{% if can_edit %} Add your first item above.{% endif %}</p>
+    <p class="muted empty">No items yet.{% if can_edit %} Tap “Add item” to start your list.{% endif %}</p>
   {% endif %}
 </div>

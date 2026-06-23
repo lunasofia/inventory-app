@@ -1,45 +1,11 @@
 {% extends 'base.html' %}
-{% block title %}Your trips · Packlist{% endblock %}
+{% block title %}Packwell{% endblock %}
 {% block content %}
-<div class="page-head">
-  <h1>Your trips</h1>
-  <a class="btn primary" href="{% url 'trip_create' %}">+ New trip</a>
+<div class="card narrow" style="text-align:center">
+  <h1>Welcome to Packwell</h1>
+  <p class="muted">Plan, organize, and pack for your trips — without keeping it all in your head.</p>
+  <p style="margin-top:1.25rem">
+    <a class="btn primary" href="{% url 'trip_create' %}">＋ Create your first trip</a>
+  </p>
 </div>
-
-<section>
-  <h2>Active</h2>
-  {% if active_trips %}
-    <ul class="trip-list">
-      {% for trip in active_trips %}
-        <li class="trip-card">
-          <a class="trip-main" href="{% url 'trip_detail' trip.pk %}">
-            <strong>{{ trip.name }}</strong>
-            {% if trip.destination %}<span class="muted">· {{ trip.destination }}</span>{% endif %}
-            {% if trip.owner != user %}<span class="tag">shared</span>{% endif %}
-          </a>
-          <div class="trip-meta">
-            <span class="status status-{{ trip.status }}">{{ trip.get_status_display }}</span>
-            <span class="muted">{{ trip.packed_count }}/{{ trip.total_count }} packed</span>
-          </div>
-        </li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p class="muted empty">No trips yet. Trip creation arrives in the next build step.</p>
-  {% endif %}
-</section>
-
-{% if complete_trips %}
-<section>
-  <h2>Completed</h2>
-  <ul class="trip-list">
-    {% for trip in complete_trips %}
-      <li class="trip-card done">
-        <a class="trip-main" href="{% url 'trip_detail' trip.pk %}"><strong>{{ trip.name }}</strong></a>
-        <span class="status status-complete">Complete</span>
-      </li>
-    {% endfor %}
-  </ul>
-</section>
-{% endif %}
 {% endblock %}

@@ -39,10 +39,10 @@ def _link_catalog_no_bump(owner, name, category):
 
 
 def _group_mode(request, trip):
-    """Current grouping lens for a trip ('category' or 'bag'), kept in session
-    during a visit. trip_detail resets it to 'category' on each full load."""
-    mode = request.session.get(f'group_mode_{trip.pk}', 'category')
-    return mode if mode in ('category', 'bag') else 'category'
+    """Current view lens for a trip ('bag', 'category', or 'all'), kept in
+    session during a visit. trip_detail resets it to 'bag' on each full load."""
+    mode = request.session.get(f'group_mode_{trip.pk}', 'bag')
+    return mode if mode in ('category', 'bag', 'all') else 'bag'
 
 
 def _get_trip_or_404(user, pk, *, require_edit=False):
@@ -64,6 +64,15 @@ def _grouped_items(trip, mode='category'):
     bag-level controls; in 'category' mode the bag slot is None.
     """
     items = list(trip.items.select_related('category', 'condition', 'bag'))
+    if mode == 'all':
+        unpacked = [i for i in items if not i.packed]
+        packed = [i for i in items if i.packed]
+        result = []
+        if unpacked:
+            result.append((f'To pack — {len(unpacked)}', None, unpacked))
+        if packed:
+            result.append((f'Packed — {len(packed)}', None, packed))
+        return result
     if mode == 'bag':
         bags = {b.id: b for b in trip.bags.all()}
         buckets = {}
@@ -100,23 +109,14 @@ def _remember_item(owner, name, category):
 
 @login_required
 def dashboard(request):
-    """Landing page: trips the user owns or has been shared on, by status."""
-    trips = (
-        Trip.accessible_by(request.user)
-        .select_related('owner')
-        .prefetch_related('items')
-    )
-    active_statuses = [
-        Trip.Status.PLANNING,
-        Trip.Status.PACKING,
-        Trip.Status.ACTIVE,
-        Trip.Status.UNPACKING,
-    ]
-    context = {
-        'active_trips': [t for t in trips if t.status in active_statuses],
-        'complete_trips': [t for t in trips if t.status == Trip.Status.COMPLETE],
-    }
-    return render(request, 'trips/dashboard.html', context)
+    """Home: jump to the most relevant trip (the trip list lives in the sidebar);
+    show a welcome screen when the user has no trips yet."""
+    trips = list(Trip.accessible_by(request.user))
+    if trips:
+        active = [t for t in trips if t.status != Trip.Status.COMPLETE]
+        target = active[0] if active else trips[0]
+        return redirect('trip_detail', pk=target.pk)
+    return render(request, 'trips/dashboard.html', {})
 
 
 @login_required
@@ -155,8 +155,8 @@ def _clone_template_into_trip(template, trip):
 @login_required
 def trip_detail(request, pk):
     trip, permission = _get_trip_or_404(request.user, pk)
-    # Default the grouping lens to category on each full page load.
-    request.session[f'group_mode_{trip.pk}'] = 'category'
+    # Default the view lens to "by bag" on each full page load.
+    request.session[f'group_mode_{trip.pk}'] = 'bag'
     context = _planning_context(request, trip, permission)
     return render(request, 'trips/trip_detail.html', context)
 
@@ -221,6 +221,7 @@ def _planning_context(request, trip, permission, add_form=None, bag_form=None, c
         'group_mode': mode,
         'groups': _grouped_items(trip, mode),
         'bags': trip.bags.all(),
+        'unbagged_count': trip.items.filter(bag__isnull=True).count(),
         'add_form': add_form if add_form is not None
         else PackingItemForm(owner=request.user, trip=trip),
         'bag_form': bag_form if bag_form is not None else BagForm(trip=trip),
@@ -240,8 +241,8 @@ def _render_planning(request, trip, permission, add_form=None, bag_form=None,
 def set_group(request, pk):
     """Toggle the grouping lens (category vs bag) for the current visit."""
     trip, permission = _get_trip_or_404(request.user, pk)
-    mode = request.GET.get('mode', 'category')
-    request.session[f'group_mode_{trip.pk}'] = mode if mode in ('category', 'bag') else 'category'
+    mode = request.GET.get('mode', 'bag')
+    request.session[f'group_mode_{trip.pk}'] = mode if mode in ('category', 'bag', 'all') else 'bag'
     return _render_planning(request, trip, permission)
 
 
@@ -337,70 +338,6 @@ def bag_mark(request, pk, bag_pk):
     packed = request.POST.get('packed') == 'true'
     bag.items.update(packed=packed)
     return _render_planning(request, trip, permission)
-
-
-# --- check-off packing mode (focused view) -----------------------------------
-
-def _pack_context(request, trip, permission):
-    mode = _group_mode(request, trip)
-    groups = _grouped_items(trip, mode)
-    pgroups = [
-        {
-            'heading': heading,
-            'bag': bag,
-            'items': items,
-            'packed': sum(1 for i in items if i.packed),
-            'total': len(items),
-        }
-        for heading, bag, items in groups
-    ]
-    return {
-        'trip': trip,
-        'permission': permission,
-        'can_edit': permission in ('owner', 'edit'),
-        'group_mode': mode,
-        'pgroups': pgroups,
-    }
-
-
-def _render_pack(request, trip, permission):
-    """Render the swappable #pack-list region."""
-    return render(request, 'trips/_packing_mode_list.html', _pack_context(request, trip, permission))
-
-
-@login_required
-def packing_mode(request, pk):
-    trip, permission = _get_trip_or_404(request.user, pk)
-    return render(request, 'trips/packing_mode.html', _pack_context(request, trip, permission))
-
-
-@login_required
-@require_POST
-def pack_toggle(request, pk, item_pk):
-    trip, permission = _get_trip_or_404(request.user, pk, require_edit=True)
-    item = get_object_or_404(PackingItem, pk=item_pk, trip=trip)
-    item.packed = not item.packed
-    item.save(update_fields=['packed'])
-    return _render_pack(request, trip, permission)
-
-
-@login_required
-def pack_group(request, pk):
-    """Toggle the grouping lens within packing mode."""
-    trip, permission = _get_trip_or_404(request.user, pk)
-    mode = request.GET.get('mode', 'category')
-    request.session[f'group_mode_{trip.pk}'] = mode if mode in ('category', 'bag') else 'category'
-    return _render_pack(request, trip, permission)
-
-
-@login_required
-@require_POST
-def pack_bag_mark(request, pk, bag_pk):
-    """Bag-level pack/unpack shortcut, re-rendering the packing region."""
-    trip, permission = _get_trip_or_404(request.user, pk, require_edit=True)
-    bag = get_object_or_404(Bag, pk=bag_pk, trip=trip)
-    bag.items.update(packed=request.POST.get('packed') == 'true')
-    return _render_pack(request, trip, permission)
 
 
 # --- templates / reuse -------------------------------------------------------
@@ -702,8 +639,11 @@ def item_row(request, pk, item_pk):
     """Return a single item's display row (used to cancel an inline edit)."""
     trip, permission = _get_trip_or_404(request.user, pk)
     item = get_object_or_404(PackingItem, pk=item_pk, trip=trip)
-    return render(request, 'trips/_item_row.html',
-                  {'trip': trip, 'item': item, 'can_edit': permission in ('owner', 'edit')})
+    return render(request, 'trips/_item_row.html', {
+        'trip': trip, 'item': item,
+        'can_edit': permission in ('owner', 'edit'),
+        'group_mode': _group_mode(request, trip),
+    })
 
 
 @login_required
@@ -712,6 +652,17 @@ def item_delete(request, pk, item_pk):
     trip, permission = _get_trip_or_404(request.user, pk, require_edit=True)
     item = get_object_or_404(PackingItem, pk=item_pk, trip=trip)
     item.delete()  # leaves the catalog Item intact — catalog is the user's memory
+    return _render_planning(request, trip, permission)
+
+
+@login_required
+@require_POST
+def item_toggle(request, pk, item_pk):
+    """Check an item off (or on) directly on the trip board."""
+    trip, permission = _get_trip_or_404(request.user, pk, require_edit=True)
+    item = get_object_or_404(PackingItem, pk=item_pk, trip=trip)
+    item.packed = not item.packed
+    item.save(update_fields=['packed'])
     return _render_planning(request, trip, permission)
 
 

@@ -14,6 +14,7 @@ urlpatterns = [
     path('trips/<int:pk>/items/<int:item_pk>/', views.item_row, name='item_row'),
     path('trips/<int:pk>/items/<int:item_pk>/edit/', views.item_edit, name='item_edit'),
     path('trips/<int:pk>/items/<int:item_pk>/delete/', views.item_delete, name='item_delete'),
+    path('trips/<int:pk>/items/<int:item_pk>/toggle/', views.item_toggle, name='item_toggle'),
     # Grouping lens + bags (HTMX)
     path('trips/<int:pk>/group/', views.set_group, name='set_group'),
     path('trips/<int:pk>/bags/add/', views.bag_create, name='bag_create'),
@@ -21,11 +22,6 @@ urlpatterns = [
     path('trips/<int:pk>/bags/<int:bag_pk>/edit/', views.bag_edit, name='bag_edit'),
     path('trips/<int:pk>/bags/<int:bag_pk>/delete/', views.bag_delete, name='bag_delete'),
     path('trips/<int:pk>/bags/<int:bag_pk>/mark/', views.bag_mark, name='bag_mark'),
-    # Check-off packing mode (HTMX)
-    path('trips/<int:pk>/pack/', views.packing_mode, name='packing_mode'),
-    path('trips/<int:pk>/pack/group/', views.pack_group, name='pack_group'),
-    path('trips/<int:pk>/pack/<int:item_pk>/toggle/', views.pack_toggle, name='pack_toggle'),
-    path('trips/<int:pk>/pack/bags/<int:bag_pk>/mark/', views.pack_bag_mark, name='pack_bag_mark'),
     # Templates / reuse
     path('templates/', views.template_list, name='template_list'),
     path('trips/<int:pk>/save-template/', views.save_as_template, name='save_as_template'),

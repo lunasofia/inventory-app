@@ -1,32 +1,72 @@
 <div id="planning">
-  {% include 'trips/_bags_bar.html' %}
-  {% if can_edit %}{% include 'trips/_categories.html' %}{% endif %}
+  <div class="progress-head">
+    <span class="label">Overall progress</span>
+    <span class="mono">{{ trip.packed_count }}/{{ trip.total_count }}</span>
+  </div>
+  <div class="progress-track"><span style="width: {{ trip.progress_pct }}%"></span></div>
+  {% if trip.total_count and trip.packed_count == trip.total_count %}
+    <p class="all-packed">✓ All packed — you're good to go!</p>
+  {% else %}
+    <p class="progress-note">{{ trip.progress_pct }}% packed</p>
+  {% endif %}
+
+  {# bag summary strip #}
+  {% if bags or unbagged_count %}
+    <div class="bag-strip">
+      {% for bag in bags %}
+        <span class="bag-strip-chip">
+          🧳 {{ bag.name }} <span class="count mono">{{ bag.packed_count }}/{{ bag.total_count }}</span>
+          {% if bag.is_packed %}<span class="badge-packed">✓</span>{% endif %}
+        </span>
+      {% endfor %}
+      {% if unbagged_count %}
+        <span class="bag-strip-chip dashed">✕ {{ unbagged_count }} unbagged</span>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {# view toggle #}
+  <div class="board-controls">
+    <div class="view-toggle">
+      <button class="{% if group_mode == 'bag' %}active{% endif %}"
+              hx-get="{% url 'set_group' trip.pk %}?mode=bag" hx-target="#planning" hx-swap="outerHTML">By bag</button>
+      <button class="{% if group_mode == 'category' %}active{% endif %}"
+              hx-get="{% url 'set_group' trip.pk %}?mode=category" hx-target="#planning" hx-swap="outerHTML">By category</button>
+      <button class="{% if group_mode == 'all' %}active{% endif %}"
+              hx-get="{% url 'set_group' trip.pk %}?mode=all" hx-target="#planning" hx-swap="outerHTML">All items</button>
+    </div>
+  </div>
 
   {% if can_edit %}
-    <form id="add-item-form" class="add-item"
-          hx-post="{% url 'item_add' trip.pk %}"
-          hx-target="#planning" hx-swap="outerHTML">
-      <div class="add-item-row">
-        <div class="add-name">
-          <input type="text" name="name" id="id_name" placeholder="Add an item…"
-                 autocomplete="off" value="{{ add_form.name.value|default:'' }}"
-                 hx-get="{% url 'item_suggest' trip.pk %}"
-                 hx-trigger="keyup changed delay:250ms"
-                 hx-target="#item-suggestions" hx-swap="innerHTML">
-          <div id="item-suggestions" class="suggestions"></div>
-        </div>
-        {{ add_form.quantity }}
-        {{ add_form.category }}
-        {{ add_form.bag }}
-        <button class="btn primary" type="submit">Add</button>
-      </div>
-      {% if add_form.errors %}
-        <p class="field-error">
-          {{ add_form.name.errors.0 }}{{ add_form.quantity.errors.0 }}
-        </p>
-      {% endif %}
-    </form>
+    {% include 'trips/_bags_bar.html' %}
+    {% include 'trips/_categories.html' %}
   {% endif %}
 
   {% include 'trips/_packing_list.html' %}
+
+  {# add-item modal (open when there are validation errors) #}
+  <div class="modal {% if add_form.errors %}open{% endif %}" id="add-item-modal">
+    <div class="modal-scrim" onclick="closeModal('add-item-modal')"></div>
+    <div class="modal-card">
+      <h2>Add item</h2>
+      {% if can_edit %}
+        <form id="add-item-form" hx-post="{% url 'item_add' trip.pk %}" hx-target="#planning" hx-swap="outerHTML">
+          <div class="add-name">
+            <input type="text" name="name" id="id_name" placeholder="Item name…" autocomplete="off"
+                   value="{{ add_form.name.value|default:'' }}"
+                   hx-get="{% url 'item_suggest' trip.pk %}" hx-trigger="keyup changed delay:250ms"
+                   hx-target="#item-suggestions" hx-swap="innerHTML">
+            <div id="item-suggestions" class="suggestions"></div>
+          </div>
+          <div class="modal-grid">
+            <div><label>Quantity</label>{{ add_form.quantity }}</div>
+            <div><label>Category</label>{{ add_form.category }}</div>
+          </div>
+          <div style="margin-bottom:0.7rem"><label>Bag</label>{{ add_form.bag }}</div>
+          {% if add_form.errors %}<p class="field-error">{{ add_form.name.errors.0 }}{{ add_form.quantity.errors.0 }}</p>{% endif %}
+          <button class="btn primary" type="submit" style="width:100%; justify-content:center">Add to list</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
 </div>

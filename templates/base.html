@@ -4,39 +4,91 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Packlist{% endblock %}</title>
+  <title>{% block title %}Packwell{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   <script src="https://unpkg.com/htmx.org@2.0.3" defer></script>
 </head>
-<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
-  <header class="topbar">
-    <a class="brand" href="{% url 'dashboard' %}">🧳 Packlist</a>
-    <nav>
-      {% if user.is_authenticated %}
-        <span class="who">{{ user.short_name }}</span>
-        <a href="{% url 'dashboard' %}">Trips</a>
-        <a href="{% url 'template_list' %}">Templates</a>
-        <a href="{% url 'profile' %}">Profile</a>
-        <form action="{% url 'logout' %}" method="post" class="inline">
-          {% csrf_token %}
-          <button type="submit" class="linkbtn">Log out</button>
-        </form>
-      {% else %}
-        <a href="{% url 'login' %}">Log in</a>
-        <a href="{% url 'register' %}">Sign up</a>
-      {% endif %}
-    </nav>
-  </header>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' class="{% if not user.is_authenticated %}anon{% endif %}">
+  <div class="layout">
 
-  <main class="container">
-    {% if messages %}
-      <ul class="messages">
-        {% for message in messages %}
-          <li class="msg {{ message.tags }}">{{ message }}</li>
+    {% if user.is_authenticated %}
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-head">
+        <a class="brand" href="{% url 'dashboard' %}">packwell<span class="dot">.</span></a>
+        <p class="brand-sub">travel inventory</p>
+        <button class="drawer-close" type="button" onclick="closeDrawer()" aria-label="Close menu">✕</button>
+      </div>
+      <nav class="sidebar-trips">
+        <div class="sidebar-section-head">
+          <span>Trips</span>
+          <a href="{% url 'trip_create' %}" title="New trip">＋</a>
+        </div>
+        {% for t in sidebar_trips %}
+          <a class="trip-link {% if trip and trip.pk == t.pk %}active{% endif %}" href="{% url 'trip_detail' t.pk %}">
+            <span class="trip-link-name">{{ t.name }}</span>
+            {% if t.destination %}<span class="trip-link-dest">⌖ {{ t.destination }}</span>{% endif %}
+            <span class="mini-progress"><span style="width: {{ t.progress_pct }}%"></span></span>
+            <span class="mini-count">{{ t.packed_count }}/{{ t.total_count }} packed</span>
+          </a>
+        {% empty %}
+          <p class="muted sidebar-empty">No trips yet.</p>
         {% endfor %}
-      </ul>
+      </nav>
+      <div class="sidebar-foot">
+        <a href="{% url 'template_list' %}">Templates</a>
+        <a href="{% url 'category_manage' %}">Categories</a>
+        <a href="{% url 'profile' %}">Profile</a>
+        <div class="sidebar-user">
+          <span class="avatar">{{ user.short_name|first|upper }}</span>
+          <div>
+            <p class="sidebar-user-name">{{ user.short_name }}</p>
+            <form action="{% url 'logout' %}" method="post" class="inline">{% csrf_token %}<button type="submit" class="linkbtn">Log out</button></form>
+          </div>
+        </div>
+      </div>
+    </aside>
+    <div class="drawer-scrim" id="drawer-scrim" onclick="closeDrawer()"></div>
     {% endif %}
-    {% block content %}{% endblock %}
-  </main>
+
+    <div class="main-col">
+      {% if user.is_authenticated %}
+      <header class="mobile-topbar">
+        <button class="icon-btn" type="button" onclick="openDrawer()" aria-label="Menu">☰</button>
+        <a class="brand sm" href="{% url 'dashboard' %}">packwell<span class="dot">.</span></a>
+        <span class="icon-btn-spacer"></span>
+      </header>
+      {% endif %}
+      <main class="main{% if not user.is_authenticated %} auth-main{% endif %}">
+        {% if messages %}
+          <ul class="messages">
+            {% for message in messages %}<li class="msg {{ message.tags }}">{{ message }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+<script>
+  function openDrawer() { document.body.classList.add('drawer-open'); }
+  function closeDrawer() { document.body.classList.remove('drawer-open'); }
+  function openModal(id) { var m = document.getElementById(id); if (m) m.classList.add('open'); var n = m && m.querySelector('[name=name]'); if (n) n.focus(); }
+  function closeModal(id) { var m = document.getElementById(id); if (m) m.classList.remove('open'); }
+  // Fill the add-item form from a chosen autocomplete suggestion.
+  function pickSuggestion(el) {
+    var form = document.getElementById('add-item-form');
+    if (!form) return;
+    form.querySelector('[name=name]').value = el.dataset.name;
+    var cat = form.querySelector('[name=category]');
+    if (cat && el.dataset.category) cat.value = el.dataset.category;
+    var sug = document.getElementById('item-suggestions');
+    if (sug) sug.innerHTML = '';
+    form.querySelector('[name=name]').focus();
+  }
+</script>
+{% block extra_js %}{% endblock %}
 </body>
 </html>

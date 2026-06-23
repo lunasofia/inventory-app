@@ -118,8 +118,12 @@ DATABASE_URL="mysql://$DB_USER:$DB_PASSWORD@127.0.0.1:3306/$DB_NAME" \
 ```
 
 ## Redeploying later
-Just re-run the **step 6** `gcloud run deploy` command (secrets/SQL flags can be
-omitted on later deploys — they persist on the service).
+Just run **`make deploy`** — it runs the tests, then
+`gcloud run deploy packwell --source . --region=us-central1`. The DB/secret/env/
+Cloud SQL config **persists** on the service across these deploys, so you don't
+re-pass those flags. (Override the service/region with
+`make deploy CLOUD_RUN_SERVICE=… CLOUD_RUN_REGION=…`.) Run it from a terminal
+where `gcloud` is on your PATH.
 
 ## Cost note
 Cloud Run scales to zero (≈ free at idle). **Cloud SQL `db-f1-micro` runs ~$8–10/mo**

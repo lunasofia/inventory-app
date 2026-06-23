@@ -127,3 +127,12 @@ MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Production hardening — only when DEBUG is off (i.e. on Cloud Run).
+# Cloud Run terminates TLS and forwards X-Forwarded-Proto, so trust it.
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    # Opt-in HSTS (0 = off by default to avoid locking out a custom domain early).
+    SECURE_HSTS_SECONDS = env.int('SECURE_HSTS_SECONDS', default=0)

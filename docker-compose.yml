@@ -1,0 +1,28 @@
+# Local production-parity: run the built image against Postgres.
+#   docker compose up --build   ->   http://localhost:8000
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: packwell
+      POSTGRES_PASSWORD: packwell
+      POSTGRES_DB: packwell
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  web:
+    build: .
+    environment:
+      DEBUG: "False"
+      SECRET_KEY: local-compose-only-not-secret
+      ALLOWED_HOSTS: "*"
+      DATABASE_URL: postgres://packwell:packwell@db:5432/packwell
+    ports:
+      - "8000:8080"
+    depends_on:
+      - db
+
+volumes:
+  pgdata:

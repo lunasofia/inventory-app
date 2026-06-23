@@ -1,0 +1,19 @@
+# Keep the image small and free of local/secret/dev cruft.
+.git/
+.github/
+.claude/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+db.sqlite3
+.env
+.env.*
+media/
+staticfiles/
+figma_make_output/
+docs/
+tests/
+*.md
+.DS_Store

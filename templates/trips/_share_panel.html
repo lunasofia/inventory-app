@@ -26,6 +26,16 @@
     <p class="muted">Not shared with anyone yet.</p>
   {% endif %}
 
+  {% if recent_people %}
+    <div class="recent-people">
+      <span class="muted">Recent people:</span>
+      {% for p in recent_people %}
+        <button type="button" class="bag-chip recent-chip"
+                data-email="{{ p.email }}" onclick="pickCollaborator(this)">{{ p.short_name }}</button>
+      {% endfor %}
+    </div>
+  {% endif %}
+
   <form id="share-add-form" class="share-add" hx-post="{% url 'share_add' trip.pk %}"
         hx-target="#share-panel" hx-swap="outerHTML">
     <div class="add-name">

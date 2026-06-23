@@ -301,7 +301,7 @@ the trip header (owner only).
 | 19.3 | Email with no account | Rejected: "No Packwell account with that email." |
 | 19.4 | Your own email | Rejected: "You already own this trip." |
 | 19.5 | Re-add an existing collaborator | No duplicate; updates their permission |
-| 19.6 | Start typing in the email field | Recent collaborators (people you've shared with / been shared by) are suggested; clicking fills the email |
+| 19.6 | Open the Share modal | A "Recent people" row shows your past collaborators as **always-visible chips labeled by display name** (excludes those already on the trip); clicking one fills their email. Typing also still autocompletes. |
 | 19.7 | Change a collaborator view↔edit | Permission updates; takes effect immediately |
 | 19.8 | Remove a collaborator | Gone from list; trip leaves their sidebar; their access 404s |
 | 19.9 | Edit-collaborator logs in | Trip shows in sidebar with "shared" tag; can add/edit/check off |

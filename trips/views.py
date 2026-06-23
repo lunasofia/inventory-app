@@ -711,10 +711,12 @@ def _recent_collaborators(user):
 
 
 def _share_context(request, trip, form=None):
+    already = trip.shares.values_list('shared_with_id', flat=True)
     return {
         'trip': trip,
         'shares': trip.shares.select_related('shared_with'),
         'share_form': form if form is not None else TripShareForm(trip=trip),
+        'recent_people': _recent_collaborators(request.user).exclude(pk__in=already)[:8],
     }
 
 

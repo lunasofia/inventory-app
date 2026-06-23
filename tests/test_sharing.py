@@ -114,3 +114,26 @@ def test_suggest_excludes_existing_collaborators(auth_client, user, trip, other_
     TripShare.objects.create(trip=trip, shared_with=other_user, permission='edit')
     resp = auth_client.get(reverse('collaborator_suggest', args=[trip.pk]))
     assert other_user.email.encode() not in resp.content  # already on this trip
+
+
+# --- always-visible "recent people" chips ---
+
+def test_recent_people_chip_shows_display_name(auth_client, user, trip):
+    robin = User.objects.create_user(
+        email='robin@example.com', password='pw-test-12345', display_name='Robin')
+    seed_user_defaults(robin)
+    past = Trip.objects.create(owner=user, name='Past trip')
+    TripShare.objects.create(trip=past, shared_with=robin, permission='edit')
+    resp = auth_client.get(reverse('trip_detail', args=[trip.pk]))
+    assert b'Recent people' in resp.content
+    assert b'recent-chip' in resp.content
+    assert b'>Robin</button>' in resp.content              # labeled by display name
+    assert b'data-email="robin@example.com"' in resp.content  # email carried for the click
+
+
+def test_recent_people_excludes_already_shared(auth_client, user, trip):
+    robin = make_user('robin@example.com')
+    TripShare.objects.create(trip=trip, shared_with=robin, permission='edit')  # on THIS trip
+    resp = auth_client.get(reverse('trip_detail', args=[trip.pk]))
+    # robin is the only collaborator and is already on this trip -> no recent-people row
+    assert b'recent-chip' not in resp.content

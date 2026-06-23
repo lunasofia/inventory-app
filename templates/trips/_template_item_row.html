@@ -3,6 +3,7 @@
     {{ item.quantity }}× {{ item.name }}
     {% if item.category %}<span class="bag-tag">{{ item.category.name }}</span>{% endif %}
   </span>
+  {% if can_edit %}
   <span class="item-actions">
     <button class="linkbtn" type="button"
             hx-get="{% url 'template_item_edit' template.pk item.pk %}"
@@ -12,4 +13,5 @@
             hx-target="#template-items" hx-swap="outerHTML"
             hx-confirm="Remove {{ item.name }}?">Remove</button>
   </span>
+  {% endif %}
 </li>

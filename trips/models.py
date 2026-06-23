@@ -161,6 +161,33 @@ class TripShare(models.Model):
         return f'{self.trip} → {self.shared_with} ({self.permission})'
 
 
+class TemplateShare(models.Model):
+    """Grants another user view or edit access to a template."""
+
+    class Permission(models.TextChoices):
+        VIEW = 'view', 'Can view'
+        EDIT = 'edit', 'Can edit'
+
+    template = models.ForeignKey(
+        'Template', on_delete=models.CASCADE, related_name='shares'
+    )
+    shared_with = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='shared_templates'
+    )
+    permission = models.CharField(
+        max_length=4, choices=Permission.choices, default=Permission.VIEW
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['template', 'shared_with'], name='unique_template_share_per_user')
+        ]
+
+    def __str__(self):
+        return f'{self.template} → {self.shared_with} ({self.permission})'
+
+
 class Template(models.Model):
     """A reusable packing list saved from (or for) a kind of trip."""
 
@@ -179,6 +206,21 @@ class Template(models.Model):
 
     def __str__(self):
         return self.name
+
+    @classmethod
+    def accessible_by(cls, user):
+        return cls.objects.filter(
+            Q(owner=user) | Q(shares__shared_with=user)
+        ).distinct()
+
+    def permission_for(self, user):
+        if self.owner_id == user.id:
+            return 'owner'
+        share = self.shares.filter(shared_with=user).first()
+        return share.permission if share else None
+
+    def can_edit(self, user):
+        return self.permission_for(user) in ('owner', 'edit')
 
 
 class TemplateItem(models.Model):

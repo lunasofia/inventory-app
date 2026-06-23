@@ -137,3 +137,13 @@ def test_recent_people_excludes_already_shared(auth_client, user, trip):
     resp = auth_client.get(reverse('trip_detail', args=[trip.pk]))
     # robin is the only collaborator and is already on this trip -> no recent-people row
     assert b'recent-chip' not in resp.content
+
+
+def test_trip_detail_share_dropdown_labels(auth_client, user, other_user):
+    """Ensure the trip detail share panel shows permission labels for view/edit."""
+    trip = Trip.objects.create(owner=user, name='LabelTest')
+    TripShare.objects.create(trip=trip, shared_with=other_user, permission='view')
+    resp = auth_client.get(reverse('trip_detail', args=[trip.pk]))
+    assert resp.status_code == 200
+    assert b'Can view' in resp.content
+    assert b'Can edit' in resp.content

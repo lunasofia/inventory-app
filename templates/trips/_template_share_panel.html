@@ -1,4 +1,4 @@
-<div id="share-panel">
+<div id="template-share-panel">
   {% if shares %}
     <ul class="share-list">
       {% for share in shares %}
@@ -9,16 +9,16 @@
             <span class="share-email">{{ share.shared_with.email }}</span>
           </span>
           <select name="permission"
-                  hx-post="{% url 'share_update' trip.pk share.pk %}"
-                  hx-target="#share-panel" hx-swap="outerHTML" hx-trigger="change">
-            {% for value, label in TripShare.Permission.choices %}
+                  hx-post="{% url 'template_share_update' template.pk share.pk %}"
+                  hx-target="#template-share-panel" hx-swap="outerHTML" hx-trigger="change">
+            {% for value, label in TemplateShare.Permission.choices %}
               <option value="{{ value }}" {% if share.permission == value %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
           <button class="linkbtn danger" type="button"
-                  hx-post="{% url 'share_revoke' trip.pk share.pk %}"
-                  hx-target="#share-panel" hx-swap="outerHTML"
-                  hx-confirm="Remove {{ share.shared_with.short_name }} from this trip?">Remove</button>
+                  hx-post="{% url 'template_share_revoke' template.pk share.pk %}"
+                  hx-target="#template-share-panel" hx-swap="outerHTML"
+                  hx-confirm="Remove {{ share.shared_with.short_name }} from this template?">Remove</button>
         </li>
       {% endfor %}
     </ul>
@@ -36,21 +36,24 @@
     </div>
   {% endif %}
 
-  <form id="share-add-form" class="share-add" hx-post="{% url 'share_add' trip.pk %}"
-        hx-target="#share-panel" hx-swap="outerHTML">
+  <form id="share-add-form" class="share-add" hx-post="{% url 'template_share_add' template.pk %}"
+        hx-target="#template-share-panel" hx-swap="outerHTML">
     <div class="add-name">
       <input type="email" name="email" placeholder="collaborator@email.com" autocomplete="off"
              value="{{ share_form.email.value|default:'' }}"
-             hx-get="{% url 'collaborator_suggest' trip.pk %}" hx-trigger="keyup changed delay:250ms"
+             hx-get="{% url 'template_collaborator_suggest' template.pk %}"
+             hx-trigger="keyup changed delay:250ms"
              hx-target="#collab-suggestions" hx-swap="innerHTML">
       <div id="collab-suggestions" class="suggestions"></div>
     </div>
     <select name="permission">
-      {% for value, label in TripShare.Permission.choices %}
+      {% for value, label in TemplateShare.Permission.choices %}
         <option value="{{ value }}" {% if value == 'edit' %}selected{% endif %}>{{ label }}</option>
       {% endfor %}
     </select>
     <button class="btn primary" type="submit">Share</button>
   </form>
-  {% if share_form.errors %}<p class="field-error">{{ share_form.email.errors.0 }}{{ share_form.non_field_errors.0 }}</p>{% endif %}
+  {% if share_form.errors %}
+    <p class="field-error">{{ share_form.email.errors.0 }}{{ share_form.non_field_errors.0 }}</p>
+  {% endif %}
 </div>

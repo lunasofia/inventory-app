@@ -16,6 +16,7 @@ from .forms import (
     PackingItemForm,
     TemplateForm,
     TemplateItemForm,
+    TemplateShareForm,
     ReminderForm,
     TripForm,
     TripShareForm,
@@ -27,6 +28,7 @@ from .models import (
     Template,
     TemplateItem,
     TemplateReminder,
+    TemplateShare,
     Trip,
     TripReminder,
     TripShare,
@@ -358,8 +360,14 @@ def bag_mark(request, pk, bag_pk):
 
 # --- templates / reuse -------------------------------------------------------
 
-def _get_template_or_404(user, pk):
-    return get_object_or_404(Template, pk=pk, owner=user)
+def _get_template_or_404(user, pk, *, require_edit=False):
+    template = get_object_or_404(Template, pk=pk)
+    permission = template.permission_for(user)
+    if permission is None:
+        raise Http404('Template not found.')
+    if require_edit and permission not in ('owner', 'edit'):
+        raise Http404('Template not found.')
+    return template, permission
 
 
 @login_required
@@ -388,8 +396,19 @@ def save_as_template(request, pk):
 
 @login_required
 def template_list(request):
-    templates = Template.objects.filter(owner=request.user).prefetch_related('items')
+    templates = Template.accessible_by(request.user).prefetch_related('items', 'owner')
     return render(request, 'trips/template_list.html', {'templates': templates})
+
+
+def _template_context(request, template, add_form=None, can_edit=None):
+    if can_edit is None:
+        can_edit = template.can_edit(request.user)
+    return {
+        'template': template,
+        'items': template.items.select_related('category'),
+        'add_form': add_form if add_form is not None else TemplateItemForm(owner=request.user),
+        'can_edit': can_edit,
+    }
 
 
 @login_required
@@ -407,30 +426,23 @@ def template_create(request):
     return render(request, 'trips/template_form.html', {'form': form, 'mode': 'new'})
 
 
-def _template_context(request, template, add_form=None):
-    return {
-        'template': template,
-        'items': template.items.select_related('category'),
-        'add_form': add_form if add_form is not None else TemplateItemForm(owner=request.user),
-    }
-
-
-def _render_template_items(request, template, add_form=None):
+def _render_template_items(request, template, add_form=None, can_edit=None):
     return render(request, 'trips/_template_items.html',
-                  _template_context(request, template, add_form))
+                  _template_context(request, template, add_form, can_edit))
 
 
 @login_required
 def template_detail(request, pk):
-    template = _get_template_or_404(request.user, pk)
+    template, permission = _get_template_or_404(request.user, pk)
     context = _template_context(request, template)
-    context['reminder_form'] = ReminderForm()
+    context.update(_template_share_context(request, template))
+    context.update({'permission': permission, 'reminder_form': ReminderForm()})
     return render(request, 'trips/template_detail.html', context)
 
 
 @login_required
 def template_edit(request, pk):
-    template = _get_template_or_404(request.user, pk)
+    template, _ = _get_template_or_404(request.user, pk, require_edit=True)
     if request.method == 'POST':
         form = TemplateForm(request.POST, instance=template, owner=request.user)
         if form.is_valid():
@@ -445,7 +457,7 @@ def template_edit(request, pk):
 
 @login_required
 def template_delete(request, pk):
-    template = _get_template_or_404(request.user, pk)
+    template, _ = _get_template_or_404(request.user, pk, require_edit=True)
     if request.method == 'POST':
         name = template.name
         template.delete()
@@ -457,26 +469,26 @@ def template_delete(request, pk):
 @login_required
 @require_POST
 def template_item_add(request, pk):
-    template = _get_template_or_404(request.user, pk)
+    template, permission = _get_template_or_404(request.user, pk, require_edit=True)
     form = TemplateItemForm(request.POST, owner=request.user)
     if form.is_valid():
         item = form.save(commit=False)
         item.template = template
         item.sort_order = (template.items.aggregate(m=Max('sort_order'))['m'] or 0) + 1
         item.save()
-        return _render_template_items(request, template)
-    return _render_template_items(request, template, add_form=form)
+        return _render_template_items(request, template, can_edit=template.can_edit(request.user))
+    return _render_template_items(request, template, add_form=form, can_edit=template.can_edit(request.user))
 
 
 @login_required
 def template_item_edit(request, pk, item_pk):
-    template = _get_template_or_404(request.user, pk)
+    template, _ = _get_template_or_404(request.user, pk, require_edit=True)
     item = get_object_or_404(TemplateItem, pk=item_pk, template=template)
     if request.method == 'POST':
         form = TemplateItemForm(request.POST, instance=item, owner=request.user)
         if form.is_valid():
             form.save()
-            return _render_template_items(request, template)
+            return _render_template_items(request, template, can_edit=template.can_edit(request.user))
         return render(request, 'trips/_template_item_edit_row.html',
                       {'template': template, 'item': item, 'form': form})
     form = TemplateItemForm(instance=item, owner=request.user)
@@ -486,18 +498,97 @@ def template_item_edit(request, pk, item_pk):
 
 @login_required
 def template_item_row(request, pk, item_pk):
-    template = _get_template_or_404(request.user, pk)
+    template, _ = _get_template_or_404(request.user, pk)
     item = get_object_or_404(TemplateItem, pk=item_pk, template=template)
-    return render(request, 'trips/_template_item_row.html', {'template': template, 'item': item})
+    return render(request, 'trips/_template_item_row.html', {
+        'template': template,
+        'item': item,
+        'can_edit': template.can_edit(request.user),
+    })
 
 
 @login_required
 @require_POST
 def template_item_delete(request, pk, item_pk):
-    template = _get_template_or_404(request.user, pk)
+    template, _ = _get_template_or_404(request.user, pk, require_edit=True)
     item = get_object_or_404(TemplateItem, pk=item_pk, template=template)
     item.delete()
-    return _render_template_items(request, template)
+    return _render_template_items(request, template, can_edit=template.can_edit(request.user))
+
+
+# --- template sharing -------------------------------------------------------
+
+def _get_template_owner_or_404(user, pk):
+    return get_object_or_404(Template, pk=pk, owner=user)
+
+
+def _recent_collaborators(user):
+    return User.objects.filter(
+        Q(shared_trips__trip__owner=user) |
+        Q(trips__shares__shared_with=user) |
+        Q(shared_templates__template__owner=user) |
+        Q(templates__shares__shared_with=user)
+    ).exclude(pk=user.pk).distinct()
+
+
+def _template_share_context(request, template, form=None):
+    already = template.shares.values_list('shared_with_id', flat=True)
+    return {
+        'template': template,
+        'shares': template.shares.select_related('shared_with'),
+        'share_form': form if form is not None else TemplateShareForm(template=template),
+        'recent_people': _recent_collaborators(request.user).exclude(pk__in=already)[:8],
+        'TemplateShare': TemplateShare,
+    }
+
+
+def _render_template_share_panel(request, template, form=None):
+    return render(request, 'trips/_template_share_panel.html', _template_share_context(request, template, form))
+
+
+@login_required
+@require_POST
+def template_share_add(request, pk):
+    template = _get_template_owner_or_404(request.user, pk)
+    form = TemplateShareForm(request.POST, template=template)
+    if form.is_valid():
+        TemplateShare.objects.update_or_create(
+            template=template, shared_with=form.cleaned_data['user'],
+            defaults={'permission': form.cleaned_data['permission']},
+        )
+        return _render_template_share_panel(request, template)
+    return _render_template_share_panel(request, template, form=form)
+
+
+@login_required
+@require_POST
+def template_share_update(request, pk, share_pk):
+    template = _get_template_owner_or_404(request.user, pk)
+    share = get_object_or_404(TemplateShare, pk=share_pk, template=template)
+    permission = request.POST.get('permission')
+    if permission in dict(TemplateShare.Permission.choices):
+        share.permission = permission
+        share.save(update_fields=['permission'])
+    return _render_template_share_panel(request, template)
+
+
+@login_required
+@require_POST
+def template_share_revoke(request, pk, share_pk):
+    template = _get_template_owner_or_404(request.user, pk)
+    get_object_or_404(TemplateShare, pk=share_pk, template=template).delete()
+    return _render_template_share_panel(request, template)
+
+
+@login_required
+def template_collaborator_suggest(request, pk):
+    template = _get_template_owner_or_404(request.user, pk)
+    query = request.GET.get('email', '').strip()
+    already = template.shares.values_list('shared_with_id', flat=True)
+    people = _recent_collaborators(request.user).exclude(pk__in=already)
+    if query:
+        people = people.filter(Q(email__icontains=query) | Q(display_name__icontains=query))
+    return render(request, 'trips/_collaborator_suggestions.html', {'people': people[:8]})
 
 
 # --- diff view (drift) -------------------------------------------------------
@@ -732,6 +823,7 @@ def _share_context(request, trip, form=None):
         'shares': trip.shares.select_related('shared_with'),
         'share_form': form if form is not None else TripShareForm(trip=trip),
         'recent_people': _recent_collaborators(request.user).exclude(pk__in=already)[:8],
+        'TripShare': TripShare,
     }
 
 
@@ -919,7 +1011,7 @@ def _render_template_reminders(request, template):
 @login_required
 @require_POST
 def template_reminder_add(request, pk):
-    template = _get_template_or_404(request.user, pk)
+    template, _ = _get_template_or_404(request.user, pk)
     form = ReminderForm(request.POST)
     if form.is_valid():
         order = (template.reminders.aggregate(m=Max('sort_order'))['m'] or 0) + 1
@@ -930,6 +1022,6 @@ def template_reminder_add(request, pk):
 @login_required
 @require_POST
 def template_reminder_delete(request, pk, reminder_pk):
-    template = _get_template_or_404(request.user, pk)
+    template, _ = _get_template_or_404(request.user, pk)
     get_object_or_404(TemplateReminder, pk=reminder_pk, template=template).delete()
     return _render_template_reminders(request, template)

@@ -3,7 +3,7 @@ from django.urls import reverse
 
 from catalog.models import Item
 from tests.conftest import category_id
-from trips.models import PackingItem, Template, TemplateItem, Trip
+from trips.models import PackingItem, Template, TemplateItem, TemplateShare, Trip
 
 pytestmark = pytest.mark.django_db
 
@@ -97,6 +97,37 @@ def test_template_item_add_edit_delete(auth_client, user):
     assert item.name == 'Beach towel' and item.quantity == 2
     auth_client.post(reverse('template_item_delete', args=[tpl.pk, item.pk]))
     assert not tpl.items.filter(pk=item.pk).exists()
+
+
+def test_template_share_add_update_revoke(auth_client, user, other_user):
+    tpl = make_template(user)
+    resp = auth_client.post(reverse('template_share_add', args=[tpl.pk]), {
+        'email': other_user.email,
+        'permission': 'view',
+    })
+    assert resp.status_code == 200
+    share = TemplateShare.objects.get(template=tpl, shared_with=other_user)
+    assert share.permission == 'view'
+
+    resp = auth_client.post(reverse('template_share_update', args=[tpl.pk, share.pk]), {
+        'permission': 'edit',
+    })
+    assert resp.status_code == 200
+    share.refresh_from_db()
+    assert share.permission == 'edit'
+
+    resp = auth_client.post(reverse('template_share_revoke', args=[tpl.pk, share.pk]))
+    assert resp.status_code == 200
+    assert not TemplateShare.objects.filter(pk=share.pk).exists()
+
+
+def test_template_detail_share_dropdown_labels(auth_client, user, other_user):
+    tpl = make_template(user)
+    TemplateShare.objects.create(template=tpl, shared_with=other_user, permission='view')
+    resp = auth_client.get(reverse('template_detail', args=[tpl.pk]))
+    assert resp.status_code == 200
+    assert b'Can view' in resp.content
+    assert b'Can edit' in resp.content
 
 
 # --- access control ---

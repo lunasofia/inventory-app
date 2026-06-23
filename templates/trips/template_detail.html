@@ -7,8 +7,13 @@
     {% if template.description %}<p class="muted">{{ template.description }}</p>{% endif %}
   </div>
   <div class="form-actions">
-    <a class="btn" href="{% url 'template_edit' template.pk %}">Edit details</a>
-    <a class="btn" href="{% url 'template_delete' template.pk %}">Delete</a>
+      {% if permission == 'owner' %}
+        <button class="btn primary" type="button" onclick="openModal('template-share-modal')">Share</button>
+        <a class="btn" href="{% url 'template_edit' template.pk %}">Edit details</a>
+        <a class="btn" href="{% url 'template_delete' template.pk %}">Delete</a>
+      {% elif can_edit %}
+        <a class="btn" href="{% url 'template_edit' template.pk %}">Edit details</a>
+      {% endif %}
   </div>
 </div>
 
@@ -22,4 +27,15 @@
   <p class="muted">These seed the "Final check" page for trips created from this template.</p>
   {% include 'trips/_template_reminders.html' %}
 </section>
+
+{% if permission == 'owner' %}
+  <div class="modal" id="template-share-modal">
+    <div class="modal-scrim" onclick="closeModal('template-share-modal')"></div>
+    <div class="modal-card">
+      <h2>Share “{{ template.name }}”</h2>
+      <p class="muted" style="margin-top:-0.5rem">People you add can view or edit this template.</p>
+      {% include 'trips/_template_share_panel.html' %}
+    </div>
+  </div>
+{% endif %}
 {% endblock %}

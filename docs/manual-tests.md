@@ -247,6 +247,13 @@ Reuse a packing list across trips; keep the baseline from drifting via a diff vi
 | 17.12 | Select some changes → Apply selected | Only chosen changes written to the template; others untouched |
 | 17.13 | Diff matching | Case-insensitive by name (e.g. "wool socks" vs "Wool socks" = a change, not add+remove) |
 | 17.14 | "Update template…" on a trip with no origin | Picker to choose a target template, or "Save as new template" |
+| 17.15 | Template: owner opens detail → Share | Owner-only "Share" button visible in action bar; modal opens with current collaborators and add-by-email form |
+| 17.16 | Add a registered user's email to a template with "Can edit" | Collaborator added; appears in the list with permission set to "Can edit" |
+| 17.17 | Add an email not associated with an account | Rejected: "No Packwell account with that email."; no share created |
+| 17.18 | Add your own email to a template | Rejected: "You already own this template."; no share created |
+| 17.19 | Re-add an existing template collaborator with a different permission | Updates their permission (no duplicate entry) |
+| 17.20 | Change a collaborator's permission in the template share modal | Permission updates immediately; collaborator's view of template adjusts (edit → can edit template content; view → read-only) |
+| 17.21 | Revoke a template collaborator | Removed from list; collaborator loses access to the template (404 on detail) |
 
 ## 18. Category management (small feature)
 

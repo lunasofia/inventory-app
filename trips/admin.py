@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Bag, PackingItem, Template, TemplateItem, Trip, TripShare
+from .models import Bag, PackingItem, Template, TemplateItem, TemplateShare, Trip, TripShare
 
 
 class PackingItemInline(admin.TabularInline):
@@ -26,8 +26,18 @@ class TripAdmin(admin.ModelAdmin):
     inlines = [BagInline, PackingItemInline, TripShareInline]
 
 
+class TemplateShareInline(admin.TabularInline):
+    model = TemplateShare
+    extra = 0
+
+
 class TemplateItemInline(admin.TabularInline):
     model = TemplateItem
+    extra = 0
+
+
+class TemplateShareInline(admin.TabularInline):
+    model = TemplateShare
     extra = 0
 
 
@@ -36,4 +46,4 @@ class TemplateAdmin(admin.ModelAdmin):
     list_display = ('name', 'owner')
     list_filter = ('owner',)
     search_fields = ('name',)
-    inlines = [TemplateItemInline]
+    inlines = [TemplateItemInline, TemplateShareInline]

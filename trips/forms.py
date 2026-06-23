@@ -1,10 +1,11 @@
 from django import forms
+from django.db.models import Q
 
 from catalog.models import Category
 
 from accounts.models import User
 
-from .models import Bag, PackingItem, Template, TemplateItem, Trip, TripShare
+from .models import Bag, PackingItem, Template, TemplateItem, TemplateShare, Trip, TripShare
 
 
 class TripForm(forms.ModelForm):
@@ -26,7 +27,7 @@ class TripForm(forms.ModelForm):
     def __init__(self, *args, owner=None, show_template=False, **kwargs):
         super().__init__(*args, **kwargs)
         if show_template and owner is not None:
-            self.fields['start_from_template'].queryset = Template.objects.filter(owner=owner)
+            self.fields['start_from_template'].queryset = Template.accessible_by(owner)
         else:
             del self.fields['start_from_template']
 
@@ -181,6 +182,35 @@ class BagForm(forms.ModelForm):
         if dupes.exists():
             raise forms.ValidationError('You already have a bag with that name.')
         return name
+
+
+class TemplateShareForm(forms.Form):
+    """Share a template with a registered user by email, with view/edit permission."""
+
+    email = forms.EmailField(widget=forms.EmailInput(attrs={
+        'placeholder': 'collaborator@email.com', 'autocomplete': 'off',
+    }))
+    permission = forms.ChoiceField(
+        choices=TemplateShare.Permission.choices, initial=TemplateShare.Permission.EDIT,
+    )
+
+    def __init__(self, *args, template=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.template = template
+
+    def clean(self):
+        cleaned = super().clean()
+        email = (cleaned.get('email') or '').strip()
+        if not email:
+            return cleaned
+        user = User.objects.filter(email__iexact=email).first()
+        if user is None:
+            self.add_error('email', 'No Packwell account with that email.')
+        elif self.template and user == self.template.owner:
+            self.add_error('email', 'You already own this template.')
+        else:
+            cleaned['user'] = user
+        return cleaned
 
 
 class TripShareForm(forms.Form):

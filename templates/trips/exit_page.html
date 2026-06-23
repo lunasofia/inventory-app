@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Final check · {{ trip.name }} · Packwell{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Final check</h1>
+    <p class="trip-meta-row"><span>{{ trip.name }}</span>{% if trip.destination %}<span>⌖ {{ trip.destination }}</span>{% endif %}</p>
+  </div>
+  <a class="btn" href="{% url 'trip_detail' trip.pk %}">Back to trip</a>
+</div>
+
+{% include 'trips/_exit_board.html' %}
+{% endblock %}

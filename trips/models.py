@@ -29,6 +29,8 @@ class Trip(models.Model):
         'Template', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='trips_created',
     )
+    # One-time guard so the exit-page reminder checklist seeds only once.
+    reminders_seeded = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -196,3 +198,65 @@ class TemplateItem(models.Model):
 
     def __str__(self):
         return self.name
+
+
+# Starter reminders seeded for each new user (the exit-page "final reminders").
+DEFAULT_REMINDERS = [
+    'Check the closet, bathroom, and under the bed',
+    'Wallet, keys, phone',
+    'Chargers & adapters',
+    'Medications',
+]
+
+
+class Reminder(models.Model):
+    """A user's default exit-page reminder (reused when seeding trips)."""
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reminders'
+    )
+    text = models.CharField(max_length=200)
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['sort_order', 'id']
+
+    def __str__(self):
+        return self.text
+
+
+class TemplateReminder(models.Model):
+    """A reminder carried by a template; cloned into a trip created from it."""
+
+    template = models.ForeignKey(Template, on_delete=models.CASCADE, related_name='reminders')
+    text = models.CharField(max_length=200)
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['sort_order', 'id']
+
+    def __str__(self):
+        return self.text
+
+
+class TripReminder(models.Model):
+    """A reminder on a trip's exit checklist; checked-state persists per trip."""
+
+    trip = models.ForeignKey(Trip, on_delete=models.CASCADE, related_name='reminders')
+    text = models.CharField(max_length=200)
+    checked = models.BooleanField(default=False)
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['sort_order', 'id']
+
+    def __str__(self):
+        return self.text
+
+
+def seed_default_reminders(user):
+    """Create the starter reminder set for a new user."""
+    Reminder.objects.bulk_create(
+        [Reminder(owner=user, text=text, sort_order=i)
+         for i, text in enumerate(DEFAULT_REMINDERS)]
+    )

@@ -12,7 +12,10 @@ from django.core.management.base import BaseCommand
 
 from accounts.models import User
 from catalog.models import Category, Item, seed_user_defaults
-from trips.models import Bag, PackingItem, Template, TemplateItem, Trip
+from trips.models import (
+    Bag, PackingItem, Template, TemplateItem, TemplateReminder, Trip,
+    seed_default_reminders,
+)
 
 EMAIL = 'demo@packlist.app'
 PASSWORD = 'demo12345'
@@ -29,6 +32,8 @@ class Command(BaseCommand):
         user.save()
         if created or not user.categories.exists():
             seed_user_defaults(user)
+        if not user.reminders.exists():
+            seed_default_reminders(user)
 
         # Clean slate for repeatable demos
         Trip.objects.filter(owner=user).delete()
@@ -96,6 +101,8 @@ class Command(BaseCommand):
                         ('T-shirt', 3, 'Clothing'), ('Underwear', 3, 'Clothing'),
                         ('Sunscreen', 1, 'Toiletries')]:
             TemplateItem.objects.create(template=weekend, name=n, quantity=q, category=cat(c))
+        for i, text in enumerate(['Check the closet and bathroom', 'Wallet, keys, phone']):
+            TemplateReminder.objects.create(template=weekend, text=text, sort_order=i)
 
         # ---- Trip 2: Family weekend at the lake (PLANNING, from template, modified) ----
         lake = Trip.objects.create(

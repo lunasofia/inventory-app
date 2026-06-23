@@ -1,0 +1,22 @@
+<div id="reminders">
+  {% if reminders %}
+    <ul class="items">
+      {% for r in reminders %}
+        <li class="item">
+          <span class="item-toggle readonly"><span class="item-label">{{ r.text }}</span></span>
+          <span class="item-actions">
+            <button class="linkbtn danger" type="button"
+                    hx-post="{% url 'reminder_delete' r.pk %}" hx-target="#reminders" hx-swap="outerHTML"
+                    hx-confirm="Remove this default reminder?">✕</button>
+          </span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">No default reminders yet.</p>
+  {% endif %}
+  <form class="add-item" hx-post="{% url 'reminder_add' %}" hx-target="#reminders" hx-swap="outerHTML">
+    <div class="add-item-row">{{ reminder_form.text }}<button class="btn" type="submit">Add</button></div>
+  </form>
+  {% if reminder_form.errors %}<p class="field-error">{{ reminder_form.text.errors.0 }}</p>{% endif %}
+</div>

@@ -107,3 +107,6 @@ def seed_user_defaults(user):
         ],
         ignore_conflicts=True,
     )
+    # Default exit-page reminders (late import avoids a circular import).
+    from trips.models import seed_default_reminders
+    seed_default_reminders(user)

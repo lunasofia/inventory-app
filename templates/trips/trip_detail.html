@@ -14,6 +14,7 @@
     </div>
     <div class="form-actions">
       {% if can_edit %}<button class="btn primary" type="button" onclick="openModal('add-item-modal')">＋ Add item</button>{% endif %}
+      <a class="btn" href="{% url 'exit_page' trip.pk %}">✓ Final check</a>
       {% if permission == 'owner' %}<button class="btn" type="button" onclick="openModal('share-modal')">Share</button>{% endif %}
       <a class="btn" href="{% url 'save_as_template' trip.pk %}">Save as template</a>
       <a class="btn" href="{% url 'template_diff' trip.pk %}">Update template…</a>

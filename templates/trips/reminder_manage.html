@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block title %}Reminders · Packwell{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Default reminders</h1></div>
+<p class="muted">These seed the "Final check" list for new trips. You can tweak any trip's
+  reminders without changing these.</p>
+<div class="card">{% include 'trips/_reminders_default.html' %}</div>
+{% endblock %}

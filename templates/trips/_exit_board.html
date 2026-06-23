@@ -1,0 +1,75 @@
+<div id="exit-board">
+  <div class="card">
+    <div class="exit-card-head">
+      <h2 style="margin:0">Final reminders</h2>
+      {% if can_edit %}
+        <button class="linkbtn" type="button"
+                hx-post="{% url 'reminders_reset' trip.pk %}" hx-target="#exit-board" hx-swap="outerHTML"
+                hx-confirm="Reset this trip's reminders to your defaults?">Reset to defaults</button>
+      {% endif %}
+    </div>
+    {% if reminders %}
+      <ul class="items">
+        {% for r in reminders %}
+          <li class="item {% if r.checked %}packed{% endif %}">
+            {% if can_edit %}
+              <button class="item-toggle" type="button"
+                      hx-post="{% url 'trip_reminder_toggle' trip.pk r.pk %}" hx-target="#exit-board" hx-swap="outerHTML">
+                <span class="checkbox">✓</span><span class="item-label">{{ r.text }}</span>
+              </button>
+              <span class="item-actions">
+                <button class="linkbtn danger" type="button"
+                        hx-post="{% url 'trip_reminder_delete' trip.pk r.pk %}" hx-target="#exit-board" hx-swap="outerHTML"
+                        hx-confirm="Remove this reminder?">✕</button>
+              </span>
+            {% else %}
+              <span class="item-toggle readonly"><span class="checkbox">✓</span><span class="item-label">{{ r.text }}</span></span>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No reminders for this trip.</p>
+    {% endif %}
+    {% if can_edit %}
+      <form class="add-item" hx-post="{% url 'trip_reminder_add' trip.pk %}" hx-target="#exit-board" hx-swap="outerHTML">
+        <div class="add-item-row">{{ reminder_form.text }}<button class="btn" type="submit">Add</button></div>
+      </form>
+    {% endif %}
+  </div>
+
+  <div class="card" style="margin-top:1rem">
+    <h2 style="margin-top:0">Items not yet packed</h2>
+    {% if unpacked %}
+      <ul class="items">
+        {% for item in unpacked %}
+          <li class="item" id="exit-item-{{ item.pk }}">
+            {% if can_edit %}
+              <button class="item-toggle" type="button"
+                      hx-post="{% url 'exit_item_toggle' trip.pk item.pk %}" hx-target="#exit-board" hx-swap="outerHTML">
+                <span class="checkbox">✓</span>
+                <span class="item-label"><span class="item-qty">{{ item.quantity }}×</span> {{ item.name }}</span>
+              </button>
+            {% else %}
+              <span class="item-toggle readonly">
+                <span class="checkbox">✓</span>
+                <span class="item-label"><span class="item-qty">{{ item.quantity }}×</span> {{ item.name }}</span>
+              </span>
+            {% endif %}
+            <span class="item-chips">
+              {% if item.category %}<span class="chip cat-{{ item.category.name|lower }}">{{ item.category.name }}</span>{% endif %}
+              {% if item.bag %}<span class="chip">{{ item.bag.name }}</span>{% endif %}
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="all-packed">✓ Everything's packed — you're good to go!</p>
+    {% endif %}
+  </div>
+
+  <div class="form-actions" style="margin-top:1rem">
+    <a class="btn" href="{% url 'trip_detail' trip.pk %}">Skim the full list</a>
+    <a class="btn" href="{% url 'template_diff' trip.pk %}">Update template…</a>
+  </div>
+</div>

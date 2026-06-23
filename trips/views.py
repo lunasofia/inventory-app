@@ -16,10 +16,21 @@ from .forms import (
     PackingItemForm,
     TemplateForm,
     TemplateItemForm,
+    ReminderForm,
     TripForm,
     TripShareForm,
 )
-from .models import Bag, PackingItem, Template, TemplateItem, Trip, TripShare
+from .models import (
+    Bag,
+    PackingItem,
+    Reminder,
+    Template,
+    TemplateItem,
+    TemplateReminder,
+    Trip,
+    TripReminder,
+    TripShare,
+)
 
 
 def _resolve_owner_category(owner, category):
@@ -397,7 +408,9 @@ def _render_template_items(request, template, add_form=None):
 @login_required
 def template_detail(request, pk):
     template = _get_template_or_404(request.user, pk)
-    return render(request, 'trips/template_detail.html', _template_context(request, template))
+    context = _template_context(request, template)
+    context['reminder_form'] = ReminderForm()
+    return render(request, 'trips/template_detail.html', context)
 
 
 @login_required
@@ -753,3 +766,153 @@ def collaborator_suggest(request, pk):
     if query:
         people = people.filter(Q(email__icontains=query) | Q(display_name__icontains=query))
     return render(request, 'trips/_collaborator_suggestions.html', {'people': people[:8]})
+
+
+# --- reminders & final-check exit page ---------------------------------------
+
+def _seed_trip_reminders(trip):
+    """Populate a trip's exit reminders from its template (if any) else the
+    owner's default reminders. Runs once (guarded by trip.reminders_seeded)."""
+    source = (trip.origin_template.reminders.all() if trip.origin_template_id
+              else trip.owner.reminders.all())
+    TripReminder.objects.bulk_create(
+        [TripReminder(trip=trip, text=r.text, sort_order=r.sort_order) for r in source]
+    )
+    trip.reminders_seeded = True
+    trip.save(update_fields=['reminders_seeded'])
+
+
+def _exit_context(request, trip, permission):
+    unpacked = list(trip.items.filter(packed=False).select_related('category', 'bag'))
+    return {
+        'trip': trip,
+        'permission': permission,
+        'can_edit': permission in ('owner', 'edit'),
+        'reminders': trip.reminders.all(),
+        'unpacked': unpacked,
+        'reminder_form': ReminderForm(),
+    }
+
+
+def _render_exit(request, trip, permission):
+    return render(request, 'trips/_exit_board.html', _exit_context(request, trip, permission))
+
+
+@login_required
+def exit_page(request, pk):
+    trip, permission = _get_trip_or_404(request.user, pk)
+    if not trip.reminders_seeded:
+        _seed_trip_reminders(trip)
+    return render(request, 'trips/exit_page.html', _exit_context(request, trip, permission))
+
+
+@login_required
+@require_POST
+def exit_item_toggle(request, pk, item_pk):
+    trip, permission = _get_trip_or_404(request.user, pk, require_edit=True)
+    item = get_object_or_404(PackingItem, pk=item_pk, trip=trip)
+    item.packed = not item.packed
+    item.save(update_fields=['packed'])
+    return _render_exit(request, trip, permission)
+
+
+@login_required
+@require_POST
+def trip_reminder_add(request, pk):
+    trip, permission = _get_trip_or_404(request.user, pk, require_edit=True)
+    form = ReminderForm(request.POST)
+    if form.is_valid():
+        order = (trip.reminders.aggregate(m=Max('sort_order'))['m'] or 0) + 1
+        TripReminder.objects.create(trip=trip, text=form.cleaned_data['text'], sort_order=order)
+    return _render_exit(request, trip, permission)
+
+
+@login_required
+@require_POST
+def trip_reminder_toggle(request, pk, reminder_pk):
+    trip, permission = _get_trip_or_404(request.user, pk, require_edit=True)
+    r = get_object_or_404(TripReminder, pk=reminder_pk, trip=trip)
+    r.checked = not r.checked
+    r.save(update_fields=['checked'])
+    return _render_exit(request, trip, permission)
+
+
+@login_required
+@require_POST
+def trip_reminder_delete(request, pk, reminder_pk):
+    trip, permission = _get_trip_or_404(request.user, pk, require_edit=True)
+    get_object_or_404(TripReminder, pk=reminder_pk, trip=trip).delete()
+    return _render_exit(request, trip, permission)
+
+
+@login_required
+@require_POST
+def reminders_reset(request, pk):
+    """Re-seed this trip's reminders from the owner's defaults / template."""
+    trip, permission = _get_trip_or_404(request.user, pk, require_edit=True)
+    trip.reminders.all().delete()
+    trip.reminders_seeded = False
+    trip.save(update_fields=['reminders_seeded'])
+    _seed_trip_reminders(trip)
+    return _render_exit(request, trip, permission)
+
+
+# default reminders (user-level, settings)
+
+def _render_default_reminders(request, form=None):
+    return render(request, 'trips/_reminders_default.html', {
+        'reminders': Reminder.objects.filter(owner=request.user),
+        'reminder_form': form if form is not None else ReminderForm(),
+    })
+
+
+@login_required
+def reminder_manage(request):
+    return render(request, 'trips/reminder_manage.html', {
+        'reminders': Reminder.objects.filter(owner=request.user),
+        'reminder_form': ReminderForm(),
+    })
+
+
+@login_required
+@require_POST
+def reminder_add(request):
+    form = ReminderForm(request.POST)
+    if form.is_valid():
+        order = (Reminder.objects.filter(owner=request.user).aggregate(m=Max('sort_order'))['m'] or 0) + 1
+        Reminder.objects.create(owner=request.user, text=form.cleaned_data['text'], sort_order=order)
+        return _render_default_reminders(request)
+    return _render_default_reminders(request, form=form)
+
+
+@login_required
+@require_POST
+def reminder_delete(request, pk):
+    get_object_or_404(Reminder, pk=pk, owner=request.user).delete()
+    return _render_default_reminders(request)
+
+
+# template reminders
+
+def _render_template_reminders(request, template):
+    return render(request, 'trips/_template_reminders.html',
+                  {'template': template, 'reminder_form': ReminderForm()})
+
+
+@login_required
+@require_POST
+def template_reminder_add(request, pk):
+    template = _get_template_or_404(request.user, pk)
+    form = ReminderForm(request.POST)
+    if form.is_valid():
+        order = (template.reminders.aggregate(m=Max('sort_order'))['m'] or 0) + 1
+        TemplateReminder.objects.create(template=template, text=form.cleaned_data['text'], sort_order=order)
+    return _render_template_reminders(request, template)
+
+
+@login_required
+@require_POST
+def template_reminder_delete(request, pk, reminder_pk):
+    template = _get_template_or_404(request.user, pk)
+    get_object_or_404(TemplateReminder, pk=reminder_pk, template=template).delete()
+    return _render_template_reminders(request, template)

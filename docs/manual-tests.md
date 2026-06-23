@@ -309,6 +309,31 @@ the trip header (owner only).
 | 19.11 | Non-owner hits any share endpoint | 404 (only the owner manages sharing) |
 | 19.12 | Owner deletes the trip | Disappears from all collaborators' sidebars |
 
+## 20. Final check / exit page (Task #13)
+
+A "Final check" page (from the trip board) with two lists for any departure.
+
+| # | Steps | Expected |
+|---|-------|----------|
+| 20.1 | Click "Final check" on a trip | Page with **Final reminders** + **Items not yet packed** lists, and links to the board + template-diff |
+| 20.2 | First open | Reminders seed from the template's (if from one) else your default reminders |
+| 20.3 | Tick / untick a reminder | Persists per trip across reload |
+| 20.4 | Add / remove a trip reminder | Affects this trip only |
+| 20.5 | "Reset to defaults" | Re-seeds this trip's reminders |
+| 20.6 | Tap an unpacked item | Marked packed; drops off the not-yet-packed list |
+| 20.7 | Last unpacked item checked | "Everything's packed" state |
+| 20.8 | Reminders settings page (`/reminders/`, from Profile/sidebar) | Add/remove your default reminders |
+| 20.9 | Template detail | Has a "Final-check reminders" section (add/remove); these seed trips made from it |
+| 20.10 | View-only collaborator | Both lists read-only; mutating endpoints → 404 |
+
+## Resolved design decisions (Final check)
+
+- One page for any departure (leaving home or heading home).
+- Two lists: **final reminders** (default + per-template + per-trip; ticks
+  persist per trip; lazy-seeded once, `Reset to defaults` re-seeds) and
+  **items not yet packed** (tappable to check off). Plus links to the board and
+  the template-diff flow. **No per-item flags.**
+
 ## Resolved design decisions (Sharing)
 
 - Registered users only (by email); unknown email rejected. Owner-only manages
@@ -336,8 +361,9 @@ the trip header (owner only).
   mode, templates/reuse (incl. the diff/drift flow), and category add/rename/delete.
 - **Also covered:** category management, the Packwell UI overhaul (sidebar +
   unified trip board), and **sharing** (Task #8, incl. recent collaborators).
-- **Not yet covered (future tasks):** unpacking mode (Task 7); exit page (#13);
-  people (#14); buy-when-there (#15); category-level marking (#16). Deferred:
-  bag (re)assignment during packing; templates capturing bags; sharing
-  templates/catalog items; sharing notifications + recipient self-leave.
+- **Not yet covered (future tasks):** unpacking mode (Task 7); people (#14);
+  buy-when-there (#15); category-level marking (#16). Deferred: bag
+  (re)assignment during packing; templates capturing bags; sharing
+  templates/catalog items; sharing notifications + recipient self-leave; per-item
+  pack-last/always-check flags (dropped from the exit page).
 - Update this file as each task lands so the checklist stays in sync.

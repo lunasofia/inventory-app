@@ -210,3 +210,18 @@ class TripShareForm(forms.Form):
         else:
             cleaned['user'] = user
         return cleaned
+
+
+class ReminderForm(forms.Form):
+    """Add a reminder (used for default / template / trip reminder lists)."""
+
+    text = forms.CharField(
+        max_length=200,
+        widget=forms.TextInput(attrs={'placeholder': 'Add a reminder…', 'autocomplete': 'off'}),
+    )
+
+    def clean_text(self):
+        text = self.cleaned_data['text'].strip()
+        if not text:
+            raise forms.ValidationError('Reminder text is required.')
+        return text

@@ -38,6 +38,19 @@ urlpatterns = [
     path('templates/<int:pk>/items/<int:item_pk>/', views.template_item_row, name='template_item_row'),
     path('templates/<int:pk>/items/<int:item_pk>/edit/', views.template_item_edit, name='template_item_edit'),
     path('templates/<int:pk>/items/<int:item_pk>/delete/', views.template_item_delete, name='template_item_delete'),
+    path('templates/<int:pk>/reminders/add/', views.template_reminder_add, name='template_reminder_add'),
+    path('templates/<int:pk>/reminders/<int:reminder_pk>/delete/', views.template_reminder_delete, name='template_reminder_delete'),
+    # Final-check exit page + reminders
+    path('trips/<int:pk>/exit/', views.exit_page, name='exit_page'),
+    path('trips/<int:pk>/exit/items/<int:item_pk>/toggle/', views.exit_item_toggle, name='exit_item_toggle'),
+    path('trips/<int:pk>/exit/reminders/add/', views.trip_reminder_add, name='trip_reminder_add'),
+    path('trips/<int:pk>/exit/reminders/reset/', views.reminders_reset, name='reminders_reset'),
+    path('trips/<int:pk>/exit/reminders/<int:reminder_pk>/toggle/', views.trip_reminder_toggle, name='trip_reminder_toggle'),
+    path('trips/<int:pk>/exit/reminders/<int:reminder_pk>/delete/', views.trip_reminder_delete, name='trip_reminder_delete'),
+    # Default reminders (settings)
+    path('reminders/', views.reminder_manage, name='reminder_manage'),
+    path('reminders/add/', views.reminder_add, name='reminder_add'),
+    path('reminders/<int:pk>/delete/', views.reminder_delete, name='reminder_delete'),
     # Category management
     path('categories/', views.category_manage, name='category_manage'),
     path('categories/add/', views.category_add, name='category_add'),

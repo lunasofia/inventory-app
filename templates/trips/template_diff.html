@@ -19,58 +19,135 @@
     <p style="margin-top:1rem"><a class="btn" href="{% url 'save_as_template' trip.pk %}">Save as new template</a></p>
   </div>
 {% else %}
-  <p class="muted">Comparing against template: <strong>{{ template.name }}</strong></p>
   {% if diff.has_changes %}
-    <form method="post" class="card">
-      {% csrf_token %}
-      <input type="hidden" name="template" value="{{ template.pk }}">
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="template" value="{{ template.pk }}">
 
-      {% if diff.added %}
-        <h2>Add to template</h2>
-        <ul class="diff-list">
-          {% for d in diff.added %}
-            <li><label><input type="checkbox" name="apply" value="added:{{ d.key }}">
-              <span class="diff-add">＋ {{ d.qty }}× {{ d.name }}{% if d.category_name %} <span class="muted">({{ d.category_name }})</span>{% endif %}</span>
-            </label></li>
-          {% endfor %}
-        </ul>
-      {% endif %}
+    <div class="diff-header">
+      <p class="muted">Comparing <strong>{{ trip.name }}</strong> against template <strong>{{ template.name }}</strong>. Select the changes to apply back.</p>
+      <label class="diff-select-all">
+        <input type="checkbox" id="diff-select-all"> Select all
+        <span class="diff-select-count muted" id="diff-select-count"></span>
+      </label>
+    </div>
 
-      {% if diff.changed %}
-        <h2>Update in template</h2>
-        <ul class="diff-list">
-          {% for d in diff.changed %}
-            <li><label><input type="checkbox" name="apply" value="changed:{{ d.key }}">
-              <span class="diff-change">~ {{ d.name }}:
-                {% if d.from_qty != d.to_qty %}qty {{ d.from_qty }}→{{ d.to_qty }}{% endif %}
-                {% if d.from_cat != d.to_cat %} <span class="muted">cat {{ d.from_cat|default:"—" }}→{{ d.to_cat|default:"—" }}</span>{% endif %}
-              </span>
-            </label></li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-
-      {% if diff.removed %}
-        <h2>Remove from template</h2>
-        <ul class="diff-list">
-          {% for d in diff.removed %}
-            <li><label><input type="checkbox" name="apply" value="removed:{{ d.key }}">
-              <span class="diff-remove">－ {{ d.qty }}× {{ d.name }}</span>
-            </label></li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-
-      <div class="form-actions">
-        <button class="btn primary" type="submit">Apply selected</button>
-        <a class="btn" href="{% url 'trip_detail' trip.pk %}">Back to trip</a>
+    {% if diff.added %}
+    <div class="diff-section">
+      <div class="diff-section-head">
+        <span>Add to template</span>
+        <span class="diff-badge diff-badge--add">{{ diff.added|length }}</span>
       </div>
-    </form>
-  {% else %}
-    <div class="card">
-      <p>✓ This trip matches the template — nothing to update.</p>
+      <ul class="diff-list">
+        {% for d in diff.added %}
+        <li>
+          <label>
+            <input type="checkbox" name="apply" value="added:{{ d.key }}" class="diff-check" checked>
+            <span class="diff-row">
+              <span class="diff-sigil diff-sigil--add">+</span>
+              <span class="diff-name">{{ d.name }}</span>
+              {% if d.qty > 1 %}<span class="diff-qty">×{{ d.qty }}</span>{% endif %}
+              {% if d.category_name %}<span class="diff-cat">{{ d.category_name }}</span>{% endif %}
+            </span>
+          </label>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {% if diff.changed %}
+    <div class="diff-section">
+      <div class="diff-section-head">
+        <span>Update in template</span>
+        <span class="diff-badge diff-badge--change">{{ diff.changed|length }}</span>
+      </div>
+      <ul class="diff-list">
+        {% for d in diff.changed %}
+        <li>
+          <label>
+            <input type="checkbox" name="apply" value="changed:{{ d.key }}" class="diff-check" checked>
+            <span class="diff-row">
+              <span class="diff-sigil diff-sigil--change">~</span>
+              <span class="diff-name">{{ d.name }}</span>
+              {% if d.from_qty != d.to_qty %}
+                <span class="diff-arrow"><s>{{ d.from_qty }}</s> → {{ d.to_qty }}</span>
+              {% endif %}
+              {% if d.from_cat != d.to_cat %}
+                <span class="diff-arrow muted">{{ d.from_cat|default:"—" }} → {{ d.to_cat|default:"—" }}</span>
+              {% endif %}
+            </span>
+          </label>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {% if diff.removed %}
+    <div class="diff-section">
+      <div class="diff-section-head">
+        <span>Remove from template</span>
+        <span class="diff-badge diff-badge--remove">{{ diff.removed|length }}</span>
+      </div>
+      <ul class="diff-list">
+        {% for d in diff.removed %}
+        <li>
+          <label>
+            <input type="checkbox" name="apply" value="removed:{{ d.key }}" class="diff-check" checked>
+            <span class="diff-row">
+              <span class="diff-sigil diff-sigil--remove">−</span>
+              <span class="diff-name">{{ d.name }}</span>
+              {% if d.qty > 1 %}<span class="diff-qty">×{{ d.qty }}</span>{% endif %}
+            </span>
+          </label>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <div class="form-actions">
+      <button class="btn primary" type="submit" id="diff-submit">Apply changes</button>
       <a class="btn" href="{% url 'trip_detail' trip.pk %}">Back to trip</a>
     </div>
+  </form>
+
+  {% else %}
+  <div class="card">
+    <p>✓ This trip matches the template — nothing to update.</p>
+    <a class="btn" href="{% url 'trip_detail' trip.pk %}">Back to trip</a>
+  </div>
   {% endif %}
 {% endif %}
+
+<script>
+(function () {
+  const all = document.getElementById('diff-select-all');
+  if (!all) return;  // no diff form on this page (picker / no-changes view)
+  const count = document.getElementById('diff-select-count');
+  const submit = document.getElementById('diff-submit');
+  const boxes = () => Array.from(document.querySelectorAll('.diff-check'));
+
+  function sync() {
+    const checked = boxes().filter(b => b.checked).length;
+    const total = boxes().length;
+    count.textContent = `(${checked}/${total})`;
+    all.checked = checked === total;
+    all.indeterminate = checked > 0 && checked < total;
+    if (submit) submit.textContent = checked > 0
+      ? `Apply ${checked} change${checked === 1 ? '' : 's'}`
+      : 'Apply changes';
+    if (submit) submit.disabled = checked === 0;
+  }
+
+  all.addEventListener('change', () => {
+    boxes().forEach(b => b.checked = all.checked);
+    sync();
+  });
+
+  document.querySelectorAll('.diff-check').forEach(b => b.addEventListener('change', sync));
+  sync();
+})();
+</script>
 {% endblock %}

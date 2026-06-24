@@ -260,9 +260,33 @@ input.qty { width: 4rem; }
 .share-add .add-name { flex: 1; }
 .share-add select { width: auto; }
 
-/* diff view */
-.diff-list { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; gap: 0.35rem; }
-.diff-list label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
-.diff-add { color: var(--ok); }
-.diff-remove { color: var(--destructive); }
-.diff-change { color: var(--warn); }
+/* diff view  (note: mapped to this codebase's vars — --line=border,
+   --muted=muted text, --muted-surface=muted background) */
+.diff-header { margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.diff-select-all { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; width: fit-content; }
+.diff-select-count { font-size: 0.8rem; }
+
+.diff-section { border: 1px solid var(--line); border-radius: 0.6rem; overflow: hidden; margin-bottom: 1rem; background: var(--card); }
+.diff-section-head { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; border-bottom: 1px solid var(--line); background: var(--muted-surface); font-size: 0.7rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+
+.diff-badge { font-size: 0.7rem; font-weight: 600; padding: 0.1rem 0.45rem; border-radius: 999px; }
+.diff-badge--add    { background: #dcfce7; color: #166534; }
+.diff-badge--change { background: #fef9c3; color: #854d0e; }
+.diff-badge--remove { background: #fee2e2; color: #991b1b; }
+
+.diff-list { list-style: none; padding: 0; margin: 0; }
+.diff-list li + li { border-top: 1px solid var(--line); }
+.diff-list li label { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.8rem 1rem; cursor: pointer; transition: background 0.1s; }
+.diff-list li label:hover { background: var(--muted-surface); }
+.diff-list input[type="checkbox"] { margin-top: 0.15rem; accent-color: var(--accent); flex-shrink: 0; width: 1rem; height: 1rem; cursor: pointer; }
+
+.diff-row { display: flex; align-items: baseline; gap: 0.4rem; flex-wrap: wrap; }
+.diff-sigil { font-weight: 700; font-size: 0.9rem; line-height: 1; flex-shrink: 0; }
+.diff-sigil--add    { color: var(--ok); }
+.diff-sigil--change { color: var(--warn); }
+.diff-sigil--remove { color: var(--destructive); }
+.diff-name { font-size: 0.9rem; }
+.diff-qty  { font-size: 0.78rem; color: var(--muted); font-family: monospace; }
+.diff-cat  { font-size: 0.75rem; color: var(--muted); background: var(--muted-surface); padding: 0.1rem 0.4rem; border-radius: 0.3rem; }
+.diff-arrow { font-size: 0.78rem; color: var(--muted); font-family: monospace; }
+.diff-arrow s { opacity: 0.5; text-decoration-color: var(--muted); }

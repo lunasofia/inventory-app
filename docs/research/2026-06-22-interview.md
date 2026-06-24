@@ -1,7 +1,7 @@
 # User Interview — 2026-06-22
 
 **Participant:** prospective user (travels/coordinates with her wife). Saw a
-live demo of the seeded `demo@packlist.app` account (dashboard + Iceland trip)
+live demo of the seeded `demo@packwell.app` account (dashboard + Iceland trip)
 in split-screen.
 
 ## Headline

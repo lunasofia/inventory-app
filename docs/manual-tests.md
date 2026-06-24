@@ -23,8 +23,8 @@ changes to avoid regressions.
 1. From the repo root: `.venv/bin/python manage.py runserver 8000`
 2. Open <http://127.0.0.1:8000/>
 3. Test accounts (local dev):
-   - **Demo user:** `tourist@example.com` / `packlist-demo-2026`
-   - **Admin/superuser** (`/admin/`): `admin@example.com` / `packlist123`
+   - **Demo user:** `tourist@example.com` / `packwell-demo-2026`
+   - **Admin/superuser** (`/admin/`): `admin@example.com` / `packwell123`
 
 > Tip: for a clean slate, register a brand-new account — signup auto-seeds
 > default categories and conditions for that user.

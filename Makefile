@@ -24,7 +24,7 @@ install-dev:    ## Install dev + test dependencies
 superuser:      ## Create a Django superuser
 	$(VENV)/python manage.py createsuperuser
 
-seed-demo:      ## Seed/rebuild the demo account (demo@packlist.app / demo12345)
+seed-demo:      ## Seed/rebuild the demo account (demo@packwell.app / demo12345)
 	$(VENV)/python manage.py seed_demo
 
 deploy: test    ## Run tests, then redeploy current code to Cloud Run (keeps DB/secrets/env)

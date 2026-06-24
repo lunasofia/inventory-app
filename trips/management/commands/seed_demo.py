@@ -4,7 +4,7 @@ Idempotent: wipes the demo user's trips/templates/catalog, then rebuilds.
 
     python manage.py seed_demo        # or: make seed-demo
 
-Login: demo@packlist.app / demo12345
+Login: demo@packwell.app / demo12345
 """
 from datetime import date
 
@@ -17,7 +17,7 @@ from trips.models import (
     seed_default_reminders,
 )
 
-EMAIL = 'demo@packlist.app'
+EMAIL = 'demo@packwell.app'
 PASSWORD = 'demo12345'
 
 

@@ -27,7 +27,7 @@
     <div class="diff-header">
       <p class="muted">Comparing <strong>{{ trip.name }}</strong> against template <strong>{{ template.name }}</strong>. Select the changes to apply back.</p>
       <label class="diff-select-all">
-        <input type="checkbox" id="diff-select-all"> Select all
+        <input type="checkbox" id="diff-select-all"> <span id="diff-select-label">Select all</span>
         <span class="diff-select-count muted" id="diff-select-count"></span>
       </label>
     </div>
@@ -126,6 +126,7 @@
   const all = document.getElementById('diff-select-all');
   if (!all) return;  // no diff form on this page (picker / no-changes view)
   const count = document.getElementById('diff-select-count');
+  const label = document.getElementById('diff-select-label');
   const submit = document.getElementById('diff-submit');
   const boxes = () => Array.from(document.querySelectorAll('.diff-check'));
 
@@ -135,6 +136,7 @@
     count.textContent = `(${checked}/${total})`;
     all.checked = checked === total;
     all.indeterminate = checked > 0 && checked < total;
+    if (label) label.textContent = all.checked ? 'Deselect all' : 'Select all';
     if (submit) submit.textContent = checked > 0
       ? `Apply ${checked} change${checked === 1 ? '' : 's'}`
       : 'Apply changes';

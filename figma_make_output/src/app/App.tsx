@@ -1,56 +1,61 @@
 import { useState } from "react";
 import {
-  CheckSquare,
-  Square,
-  Plus,
-  ChevronRight,
-  MapPin,
-  Calendar,
-  Search,
-  X,
-  Luggage,
-  Backpack,
-  ShoppingBag,
-  Trash2,
-  ChevronDown,
-  ChevronUp,
-  Shirt,
-  Zap,
-  BookOpen,
-  Package,
-  Menu,
-  ArrowLeft,
+  CheckSquare, Square, Plus, ChevronRight, MapPin, Calendar,
+  Search, X, Luggage, Backpack, ShoppingBag, Trash2,
+  ChevronDown, ChevronUp, Shirt, Zap, BookOpen, Package,
+  Menu, Bell,
 } from "lucide-react";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Theme tokens ─────────────────────────────────────────────────────────────
+const C = {
+  bg:           "#fefcf5",
+  card:         "#fffef9",
+  sidebar:      "#fdf6e3",
+  sidebarAccent:"#f5e9c4",
+  sidebarText:  "#1a1a2e",
+  sidebarMuted: "#8a825e",
+  sidebarBorder:"rgba(26,26,46,0.08)",
+  ink:          "#1a1a2e",
+  muted:        "#8a825e",
+  accent:       "#d4920a",
+  accentFg:     "#ffffff",
+  border:       "rgba(26,26,46,0.1)",
+  inputBg:      "#f0e8d5",
+  progressBg:   "#f0e4b8",
+  ok:           "#2e7d4f",
+  okBg:         "#dcfce7",
+  warn:         "#b07d18",
+  pill:         "#fef3c7",
+  pillInk:      "#92400e",
+};
 
-type Bag = { id: number; name: string; icon: "luggage" | "backpack" | "tote" };
-type Item = { id: number; name: string; packed: boolean; category: string; quantity: number; bagId: number | null };
+const heading = "'Fraunces', Georgia, serif";
+const body    = "'Inter', sans-serif";
+const mono    = "'DM Mono', monospace";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+type Bag  = { id: number; name: string; icon: "luggage"|"backpack"|"tote" };
+type Item = { id: number; name: string; packed: boolean; category: string; bagId: number|null };
 type Trip = { id: number; name: string; destination: string; date: string };
 
-// ─── Constants ───────────────────────────────────────────────────────────────
-
 const CATEGORIES = [
-  { name: "Clothing",    icon: Shirt,    color: "bg-amber-100 text-amber-800" },
-  { name: "Electronics", icon: Zap,      color: "bg-blue-100 text-blue-800" },
-  { name: "Documents",   icon: BookOpen, color: "bg-emerald-100 text-emerald-700" },
-  { name: "Gear",        icon: Package,  color: "bg-orange-100 text-orange-800" },
+  { name: "Clothing",    icon: Shirt,    bg: "#fef3c7", fg: "#92400e" },
+  { name: "Electronics", icon: Zap,      bg: "#fde8d0", fg: "#7c3a1a" },
+  { name: "Documents",   icon: BookOpen, bg: "#dcfce7", fg: "#166534" },
+  { name: "Gear",        icon: Package,  bg: "#fce7f3", fg: "#831843" },
 ];
 
 const BAG_COLORS = [
-  "bg-amber-100 text-amber-800",
-  "bg-blue-100 text-blue-800",
-  "bg-emerald-100 text-emerald-700",
-  "bg-rose-100 text-rose-800",
-  "bg-violet-100 text-violet-800",
+  { bg: "#fef3c7", fg: "#92400e" },
+  { bg: "#fde8d0", fg: "#7c3a1a" },
+  { bg: "#dcfce7", fg: "#166534" },
+  { bg: "#fce7f3", fg: "#831843" },
 ];
 
-// ─── Seed data ────────────────────────────────────────────────────────────────
-
 const TRIPS: Trip[] = [
-  { id: 1, name: "Lisbon & Porto",          destination: "Portugal", date: "Jul 12 – Jul 26" },
-  { id: 2, name: "Weekend in the Dolomites", destination: "Italy",   date: "Aug 3 – Aug 6" },
-  { id: 3, name: "Tokyo Photo Trip",         destination: "Japan",   date: "Sep 18 – Oct 2" },
+  { id: 1, name: "Lisbon & Porto",    destination: "Portugal", date: "Jul 12 – Jul 26" },
+  { id: 2, name: "Dolomites Weekend", destination: "Italy",    date: "Aug 3 – Aug 6" },
+  { id: 3, name: "Tokyo Photo Trip",  destination: "Japan",    date: "Sep 18 – Oct 2" },
 ];
 
 const INIT_BAGS: Bag[] = [
@@ -61,470 +66,317 @@ const INIT_BAGS: Bag[] = [
 ];
 
 const INIT_ITEMS: Item[] = [
-  { id: 1,  name: "Merino wool t-shirts (3)",    packed: true,  category: "Clothing",     quantity: 3, bagId: 1 },
-  { id: 2,  name: "Linen trousers",              packed: true,  category: "Clothing",     quantity: 1, bagId: 1 },
-  { id: 3,  name: "Light rain jacket",           packed: false, category: "Clothing",     quantity: 1, bagId: 1 },
-  { id: 4,  name: "Walking sandals",             packed: false, category: "Clothing",     quantity: 1, bagId: 1 },
-  { id: 5,  name: "Swimsuit",                    packed: false, category: "Clothing",     quantity: 1, bagId: 1 },
-  { id: 6,  name: "Passport & copies",           packed: true,  category: "Documents",    quantity: 1, bagId: 2 },
-  { id: 7,  name: "Travel insurance docs",       packed: true,  category: "Documents",    quantity: 1, bagId: 2 },
-  { id: 8,  name: "International plug adapter",  packed: false, category: "Electronics",  quantity: 1, bagId: 2 },
-  { id: 9,  name: "USB-C charging cables",       packed: true,  category: "Electronics",  quantity: 2, bagId: 2 },
-  { id: 10, name: "Noise-cancelling headphones", packed: false, category: "Electronics",  quantity: 1, bagId: 3 },
-  { id: 11, name: "Portable battery pack",       packed: true,  category: "Electronics",  quantity: 1, bagId: 3 },
-  { id: 12, name: "Microfiber towel",            packed: true,  category: "Gear",         quantity: 1, bagId: 3 },
-  { id: 13, name: "Sunscreen SPF 50",            packed: false, category: "Gear",         quantity: 1, bagId: 3 },
-  { id: 14, name: "Sunglasses",                  packed: false, category: "Gear",         quantity: 1, bagId: 4 },
-  { id: 15, name: "Water bottle",                packed: true,  category: "Gear",         quantity: 1, bagId: null },
-  { id: 16, name: "Phrase book",                 packed: false, category: "Documents",    quantity: 1, bagId: null },
+  { id: 1,  name: "Merino wool t-shirts (3)",    packed: true,  category: "Clothing",     bagId: 1 },
+  { id: 2,  name: "Linen trousers",              packed: true,  category: "Clothing",     bagId: 1 },
+  { id: 3,  name: "Light rain jacket",           packed: false, category: "Clothing",     bagId: 1 },
+  { id: 4,  name: "Walking sandals",             packed: false, category: "Clothing",     bagId: 1 },
+  { id: 5,  name: "Passport & copies",           packed: true,  category: "Documents",    bagId: 2 },
+  { id: 6,  name: "Travel insurance docs",       packed: true,  category: "Documents",    bagId: 2 },
+  { id: 7,  name: "International plug adapter",  packed: false, category: "Electronics",  bagId: 2 },
+  { id: 8,  name: "USB-C charging cables",       packed: true,  category: "Electronics",  bagId: 2 },
+  { id: 9,  name: "Noise-cancelling headphones", packed: false, category: "Electronics",  bagId: 3 },
+  { id: 10, name: "Portable battery pack",       packed: true,  category: "Electronics",  bagId: 3 },
+  { id: 11, name: "Microfiber towel",            packed: true,  category: "Gear",         bagId: 3 },
+  { id: 12, name: "Sunscreen SPF 50",            packed: false, category: "Gear",         bagId: 3 },
+  { id: 13, name: "Sunglasses",                  packed: false, category: "Gear",         bagId: 4 },
+  { id: 14, name: "Water bottle",               packed: true,  category: "Gear",         bagId: null },
+  { id: 15, name: "Phrase book",                packed: false, category: "Documents",    bagId: null },
 ];
 
-// ─── Small helpers ────────────────────────────────────────────────────────────
-
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function BagIcon({ icon, size = 15 }: { icon: Bag["icon"]; size?: number }) {
   if (icon === "backpack") return <Backpack size={size} />;
   if (icon === "tote")     return <ShoppingBag size={size} />;
   return <Luggage size={size} />;
 }
 
-function bagStats(bag: Bag, items: Item[]) {
-  const bi = items.filter((i) => i.bagId === bag.id);
-  const p  = bi.filter((i) => i.packed).length;
-  return { total: bi.length, packed: p, pct: bi.length > 0 ? Math.round((p / bi.length) * 100) : 0 };
-}
-
-// ─── BagCard ─────────────────────────────────────────────────────────────────
-
-function BagCard({
-  bag, items, colorClass, onDelete, onToggleAll,
-}: {
-  bag: Bag; items: Item[]; colorClass: string;
-  onDelete: () => void; onToggleAll: (packed: boolean) => void;
+// ─── Bag card ────────────────────────────────────────────────────────────────
+function BagCard({ bag, items, color, onToggleAll, onDelete }: {
+  bag: Bag; items: Item[];
+  color: { bg: string; fg: string };
+  onToggleAll: (p: boolean) => void;
+  onDelete: () => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
-  const { total, packed, pct } = bagStats(bag, items);
+  const packed = items.filter(i => i.packed).length;
+  const pct    = items.length > 0 ? Math.round((packed / items.length) * 100) : 0;
 
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden mb-3">
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-border/60">
-        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colorClass}`}>
+    <div style={{
+      background: C.card, border: `1px solid ${C.border}`,
+      borderRadius: 14, overflow: "hidden", marginBottom: 12,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: collapsed ? "none" : `1px solid ${C.border}` }}>
+        <div style={{ width: 36, height: 36, borderRadius: 10, background: color.bg, color: color.fg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <BagIcon icon={bag.icon} />
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">{bag.name}</span>
-            {pct === 100 && total > 0 && (
-              <span className="text-xs bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-medium">Packed</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: C.ink, fontFamily: heading }}>{bag.name}</span>
+            {pct === 100 && items.length > 0 && (
+              <span style={{ fontSize: 11, background: C.okBg, color: C.ok, padding: "1px 8px", borderRadius: 99, fontWeight: 600 }}>Packed ✓</span>
             )}
           </div>
-          <div className="flex items-center gap-3 mt-1">
-            <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
-              <div className="h-full bg-accent rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+            <div style={{ flex: 1, height: 4, background: C.progressBg, borderRadius: 99, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${pct}%`, background: C.accent, borderRadius: 99, transition: "width 0.4s" }} />
             </div>
-            <span className="text-xs text-muted-foreground shrink-0" style={{ fontFamily: "'DM Mono', monospace" }}>
-              {packed}/{total}
-            </span>
+            <span style={{ fontSize: 11, color: C.muted, fontFamily: mono, flexShrink: 0 }}>{packed}/{items.length}</span>
           </div>
         </div>
-        <div className="flex items-center gap-0.5 shrink-0">
-          {total > 0 && (
-            <button
-              onClick={() => onToggleAll(packed < total)}
-              className="text-xs text-muted-foreground hover:text-foreground px-2 py-1.5 rounded hover:bg-muted/60 transition-colors hidden sm:block"
-            >
-              {packed < total ? "Pack all" : "Unpack all"}
+        <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
+          {items.length > 0 && (
+            <button onClick={() => onToggleAll(packed < items.length)}
+              style={{ fontSize: 11, color: C.muted, padding: "4px 8px", borderRadius: 6, border: "none", background: "transparent", cursor: "pointer" }}>
+              {packed < items.length ? "Pack all" : "Unpack all"}
             </button>
           )}
-          <button onClick={onDelete} className="p-2 text-muted-foreground hover:text-destructive transition-colors rounded hover:bg-destructive/10">
+          <button onClick={onDelete} style={{ padding: 6, borderRadius: 6, border: "none", background: "transparent", cursor: "pointer", color: C.muted }}>
             <Trash2 size={13} />
           </button>
-          <button onClick={() => setCollapsed((v) => !v)} className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded hover:bg-muted/60">
+          <button onClick={() => setCollapsed(v => !v)} style={{ padding: 6, borderRadius: 6, border: "none", background: "transparent", cursor: "pointer", color: C.muted }}>
             {collapsed ? <ChevronDown size={15} /> : <ChevronUp size={15} />}
           </button>
         </div>
       </div>
       {!collapsed && (
         <div>
-          {items.length === 0 ? (
-            <p className="text-xs text-muted-foreground px-4 py-4 italic">No items in this bag yet.</p>
-          ) : (
-            items.map((item) => (
-              <div key={item.id} className="flex items-center gap-3 px-4 py-3.5 border-b border-border/30 last:border-b-0 hover:bg-muted/10 transition-colors">
-                <span className={`flex-1 text-sm ${item.packed ? "line-through text-muted-foreground" : ""}`}>{item.name}</span>
-                <span className="text-xs text-muted-foreground">{item.category}</span>
+          {items.length === 0
+            ? <p style={{ fontSize: 13, color: C.muted, padding: "14px 16px", margin: 0, fontStyle: "italic" }}>No items yet.</p>
+            : items.map((item, i) => (
+              <div key={item.id} style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "11px 16px",
+                borderBottom: i < items.length - 1 ? `1px solid ${C.border}` : "none",
+                background: "transparent",
+              }}>
+                <span style={{ fontSize: 13, color: item.packed ? C.muted : C.ink, textDecoration: item.packed ? "line-through" : "none", flex: 1 }}>
+                  {item.name}
+                </span>
+                <span style={{ fontSize: 11, color: C.muted }}>{item.category}</span>
               </div>
             ))
-          )}
+          }
         </div>
       )}
     </div>
   );
 }
 
-// ─── AddItemSheet ─────────────────────────────────────────────────────────────
-
-function AddItemSheet({
-  bags, onAdd, onClose,
-}: {
-  bags: Bag[];
-  onAdd: (name: string, category: string, bagId: number | null) => void;
-  onClose: () => void;
-}) {
-  const [name, setName]         = useState("");
-  const [category, setCategory] = useState(CATEGORIES[0].name);
-  const [bagId, setBagId]       = useState<number | null>(bags[0]?.id ?? null);
-
-  const submit = () => {
-    if (!name.trim()) return;
-    onAdd(name.trim(), category, bagId);
-    onClose();
-  };
-
-  return (
-    <>
-      {/* Scrim */}
-      <div className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm" onClick={onClose} />
-
-      {/* Sheet — slides up from bottom on mobile, centered modal on desktop */}
-      <div className="fixed z-50 inset-x-0 bottom-0 md:inset-0 md:flex md:items-center md:justify-center md:p-8">
-        <div className="bg-card rounded-t-2xl md:rounded-2xl shadow-2xl w-full md:max-w-md border border-border/60">
-          {/* Handle (mobile only) */}
-          <div className="flex justify-center pt-3 pb-1 md:hidden">
-            <div className="w-10 h-1 rounded-full bg-border" />
-          </div>
-
-          <div className="px-5 pt-4 pb-2 flex items-center justify-between">
-            <h2 className="text-base font-medium" style={{ fontFamily: "'DM Serif Display', serif" }}>
-              Add item
-            </h2>
-            <button onClick={onClose} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-muted">
-              <X size={16} />
-            </button>
-          </div>
-
-          <div className="px-5 pb-6 space-y-4">
-            <input
-              autoFocus
-              type="text"
-              placeholder="Item name..."
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") submit(); if (e.key === "Escape") onClose(); }}
-              className="w-full bg-input-background border border-border rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground"
-            />
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-muted-foreground block mb-1.5">Category</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full bg-input-background border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                  {CATEGORIES.map((c) => <option key={c.name}>{c.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground block mb-1.5">Bag</label>
-                <select
-                  value={bagId ?? ""}
-                  onChange={(e) => setBagId(e.target.value ? Number(e.target.value) : null)}
-                  className="w-full bg-input-background border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                >
-                  <option value="">No bag</option>
-                  {bags.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              </div>
-            </div>
-
-            <button
-              onClick={submit}
-              className="w-full bg-accent text-accent-foreground py-3 rounded-xl text-sm font-medium hover:bg-accent/90 transition-colors"
-            >
-              Add to list
-            </button>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
-
-// ─── TripsDrawer (mobile) ─────────────────────────────────────────────────────
-
-function TripsDrawer({
-  trips, packed, total, onClose,
-}: {
-  trips: Trip[]; packed: number; total: number; onClose: () => void;
-}) {
-  return (
-    <>
-      <div className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed z-50 inset-y-0 left-0 w-72 bg-sidebar flex flex-col shadow-2xl">
-        <div className="px-5 py-5 border-b border-sidebar-border flex items-center justify-between">
-          <div>
-            <span className="text-lg text-foreground tracking-tight" style={{ fontFamily: "'DM Serif Display', serif" }}>packwell.</span>
-            <p className="text-xs text-muted-foreground mt-0.5 tracking-wide uppercase">travel inventory</p>
-          </div>
-          <button onClick={onClose} className="p-1.5 text-muted-foreground hover:text-foreground"><X size={18} /></button>
-        </div>
-        <div className="px-4 py-5 flex-1 overflow-y-auto">
-          <p className="text-xs font-medium tracking-widest uppercase text-muted-foreground px-2 mb-3">Trips</p>
-          <div className="space-y-1">
-            {trips.map((trip, i) => {
-              const tPacked = i === 0 ? packed : 0;
-              const tTotal  = i === 0 ? total  : [9, 18][i - 1] ?? 0;
-              const tPct    = tTotal > 0 ? Math.round((tPacked / tTotal) * 100) : 0;
-              return (
-                <div key={trip.id} className={`px-3 py-3 rounded-lg ${i === 0 ? "bg-sidebar-accent" : "text-muted-foreground"}`}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">{trip.name}</p>
-                      <div className="flex items-center gap-1 mt-0.5 text-xs opacity-70">
-                        <MapPin size={10} />{trip.destination}
-                      </div>
-                    </div>
-                    {i === 0 && <ChevronRight size={14} className="text-accent" />}
-                  </div>
-                  <div className="mt-2">
-                    <div className="h-1 bg-sidebar-border rounded-full overflow-hidden">
-                      <div className="h-full bg-accent rounded-full" style={{ width: `${tPct}%` }} />
-                    </div>
-                    <p className="text-xs mt-1 opacity-60">{tPacked}/{tTotal} packed</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-        <div className="px-4 py-4 border-t border-sidebar-border">
-          <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-accent transition-colors">
-            <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center text-white text-xs font-medium">L</div>
-            <div>
-              <p className="text-sm font-medium">Luna Sofia</p>
-              <p className="text-xs text-muted-foreground">3 active trips</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
-
-// ─── Main App ─────────────────────────────────────────────────────────────────
-
+// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [items, setItems]             = useState<Item[]>(INIT_ITEMS);
-  const [bags, setBags]               = useState<Bag[]>(INIT_BAGS);
-  const [view, setView]               = useState<"bags" | "category" | "list">("bags");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showAdd, setShowAdd]         = useState(false);
-  const [addingBag, setAddingBag]     = useState(false);
-  const [newBagName, setNewBagName]   = useState("");
-  const [newBagIcon, setNewBagIcon]   = useState<Bag["icon"]>("luggage");
-  const [showDrawer, setShowDrawer]   = useState(false);
-  const [showSearch, setShowSearch]   = useState(false);
+  const [items, setItems]   = useState<Item[]>(INIT_ITEMS);
+  const [bags, setBags]     = useState<Bag[]>(INIT_BAGS);
+  const [view, setView]     = useState<"bags"|"category"|"list">("bags");
+  const [search, setSearch] = useState("");
+  const [showAdd, setShowAdd]     = useState(false);
+  const [showDrawer, setShowDrawer] = useState(false);
+  const [newName, setNewName]       = useState("");
+  const [newBag, setNewBag]         = useState<number|null>(1);
+  const [newCat, setNewCat]         = useState("Clothing");
 
-  const toggleItem   = (id: number) => setItems((p) => p.map((i) => i.id === id ? { ...i, packed: !i.packed } : i));
-  const toggleAllBag = (bagId: number, packed: boolean) => setItems((p) => p.map((i) => i.bagId === bagId ? { ...i, packed } : i));
-  const deleteBag    = (bagId: number) => { setBags((p) => p.filter((b) => b.id !== bagId)); setItems((p) => p.map((i) => i.bagId === bagId ? { ...i, bagId: null } : i)); };
-
-  const addItem = (name: string, category: string, bagId: number | null) =>
-    setItems((p) => [...p, { id: Date.now(), name, packed: false, category, quantity: 1, bagId }]);
-
-  const addBag = () => {
-    if (!newBagName.trim()) return;
-    setBags((p) => [...p, { id: Date.now(), name: newBagName.trim(), icon: newBagIcon }]);
-    setNewBagName("");
-    setAddingBag(false);
+  const toggle       = (id: number) => setItems(p => p.map(i => i.id === id ? { ...i, packed: !i.packed } : i));
+  const toggleAllBag = (bagId: number, packed: boolean) => setItems(p => p.map(i => i.bagId === bagId ? { ...i, packed } : i));
+  const deleteBag    = (bagId: number) => { setBags(p => p.filter(b => b.id !== bagId)); setItems(p => p.map(i => i.bagId === bagId ? { ...i, bagId: null } : i)); };
+  const addItem      = () => {
+    if (!newName.trim()) return;
+    setItems(p => [...p, { id: Date.now(), name: newName.trim(), packed: false, category: newCat, bagId: newBag }]);
+    setNewName(""); setShowAdd(false);
   };
 
-  const packed   = items.filter((i) => i.packed).length;
+  const packed   = items.filter(i => i.packed).length;
   const total    = items.length;
   const progress = total > 0 ? Math.round((packed / total) * 100) : 0;
+  const unbagged = items.filter(i => i.bagId === null);
 
-  const unbagged         = items.filter((i) => i.bagId === null);
-  const filteredUnbagged = unbagged.filter((i) => i.name.toLowerCase().includes(searchQuery.toLowerCase()));
-
-  const filtered = (list: Item[]) => list.filter((i) => i.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const q = search.toLowerCase();
+  const filtered = (list: Item[]) => q ? list.filter(i => i.name.toLowerCase().includes(q)) : list;
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: C.bg, display: "flex", fontFamily: body, color: C.ink }}>
 
       {/* ── Desktop sidebar ── */}
-      <aside className="hidden md:flex w-64 shrink-0 bg-sidebar border-r border-sidebar-border flex-col">
-        <div className="px-6 py-6 border-b border-sidebar-border">
-          <span className="text-xl text-foreground tracking-tight" style={{ fontFamily: "'DM Serif Display', serif" }}>packwell.</span>
-          <p className="text-xs text-muted-foreground mt-0.5 tracking-wide uppercase">travel inventory</p>
-        </div>
-        <div className="px-4 py-5 flex-1 overflow-y-auto">
-          <div className="flex items-center justify-between mb-3 px-2">
-            <span className="text-xs font-medium tracking-widest uppercase text-muted-foreground">Trips</span>
-            <button className="text-muted-foreground hover:text-foreground transition-colors"><Plus size={14} /></button>
+      <aside style={{
+        width: 256, flexShrink: 0, background: C.sidebar, display: "flex",
+        flexDirection: "column", borderRight: `1px solid ${C.sidebarBorder}`,
+      }} className="hidden md:flex">
+        {/* Wordmark */}
+        <div style={{ padding: "24px 20px 20px", borderBottom: `1px solid ${C.sidebarBorder}` }}>
+          <div style={{ fontFamily: heading, fontSize: 22, fontWeight: 600, color: C.sidebarText, letterSpacing: "0" }}>
+            packwell<span style={{ color: C.accent }}>.</span>
           </div>
-          <div className="space-y-1">
-            {TRIPS.map((trip, i) => {
-              const tPacked = i === 0 ? packed : 0;
-              const tTotal  = i === 0 ? total  : [9, 18][i - 1] ?? 0;
-              const tPct    = tTotal > 0 ? Math.round((tPacked / tTotal) * 100) : 0;
-              return (
-                <div key={trip.id} className={`px-3 py-3 rounded-md transition-colors ${i === 0 ? "bg-sidebar-accent text-foreground" : "text-muted-foreground"}`}>
-                  <div className="flex items-start justify-between">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{trip.name}</p>
-                      <div className="flex items-center gap-1 mt-0.5"><MapPin size={10} /><span className="text-xs truncate">{trip.destination}</span></div>
-                    </div>
-                    {i === 0 && <ChevronRight size={14} className="mt-0.5 shrink-0 text-accent" />}
-                  </div>
-                  <div className="mt-2">
-                    <div className="h-1 bg-sidebar-border rounded-full overflow-hidden">
-                      <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${tPct}%` }} />
-                    </div>
-                    <p className="text-xs mt-1 opacity-70">{tPacked}/{tTotal} packed</p>
-                  </div>
+          <div style={{ fontSize: 10, color: C.sidebarMuted, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 3 }}>
+            travel inventory
+          </div>
+        </div>
+
+        {/* Trips */}
+        <div style={{ flex: 1, padding: "16px 12px", overflowY: "auto" }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: C.sidebarMuted, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8, padding: "0 8px" }}>
+            Trips
+          </div>
+          {TRIPS.map((trip, i) => {
+            const tPacked = i === 0 ? packed : 0;
+            const tTotal  = i === 0 ? total : [9, 18][i - 1] ?? 0;
+            const tPct    = tTotal > 0 ? Math.round((tPacked / tTotal) * 100) : 0;
+            const active  = i === 0;
+            return (
+              <div key={trip.id} style={{
+                padding: "10px 12px", borderRadius: 10, marginBottom: 4,
+                background: active ? C.sidebarAccent : "transparent",
+                cursor: "pointer",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: C.sidebarText, fontFamily: heading }}>{trip.name}</span>
+                  {active && <ChevronRight size={14} color={C.accent} />}
                 </div>
-              );
-            })}
-          </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3 }}>
+                  <MapPin size={10} color={C.sidebarMuted} />
+                  <span style={{ fontSize: 11, color: C.sidebarMuted }}>{trip.destination}</span>
+                </div>
+                <div style={{ marginTop: 6 }}>
+                  <div style={{ height: 3, background: "rgba(255,255,255,0.12)", borderRadius: 99, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${tPct}%`, background: C.accent, borderRadius: 99 }} />
+                  </div>
+                  <span style={{ fontSize: 10, color: C.sidebarMuted, marginTop: 3, display: "block" }}>{tPacked}/{tTotal} packed</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
-        <div className="px-4 py-4 border-t border-sidebar-border">
-          <div className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-sidebar-accent transition-colors cursor-pointer">
-            <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center text-white text-xs font-medium">L</div>
+
+        {/* Footer nav */}
+        <div style={{ padding: "12px", borderTop: `1px solid ${C.sidebarBorder}` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 10, cursor: "pointer" }}>
+            <div style={{ width: 30, height: 30, borderRadius: "50%", background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 13, fontWeight: 700 }}>L</div>
             <div>
-              <p className="text-sm font-medium">Luna Sofia</p>
-              <p className="text-xs text-muted-foreground">3 active trips</p>
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.sidebarText }}>Luna Sofia</div>
+              <div style={{ fontSize: 11, color: C.sidebarMuted }}>3 active trips</div>
             </div>
           </div>
         </div>
       </aside>
 
-      {/* ── Mobile / main content ── */}
-      <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
+      {/* ── Mobile drawer ── */}
+      {showDrawer && (
+        <>
+          <div onClick={() => setShowDrawer(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 40 }} />
+          <div style={{ position: "fixed", top: 0, left: 0, bottom: 0, width: 272, background: C.sidebar, zIndex: 50, display: "flex", flexDirection: "column", padding: "20px 12px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, padding: "0 8px" }}>
+              <div style={{ fontFamily: heading, fontSize: 20, fontWeight: 800, color: C.sidebarText }}>packwell<span style={{ color: C.accent }}>.</span></div>
+              <button onClick={() => setShowDrawer(false)} style={{ background: "none", border: "none", color: C.sidebarMuted, cursor: "pointer" }}><X size={18} /></button>
+            </div>
+            {TRIPS.map((trip, i) => (
+              <div key={trip.id} style={{ padding: "10px 12px", borderRadius: 10, marginBottom: 4, background: i === 0 ? C.sidebarAccent : "transparent" }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: C.sidebarText, fontFamily: heading }}>{trip.name}</div>
+                <div style={{ fontSize: 11, color: C.sidebarMuted, marginTop: 2 }}>{trip.destination} · {trip.date}</div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
-        {/* Mobile top nav */}
-        <header className="md:hidden sticky top-0 z-30 bg-background/95 backdrop-blur border-b border-border px-4 py-3 flex items-center justify-between">
-          <button onClick={() => setShowDrawer(true)} className="p-2 -ml-2 text-muted-foreground hover:text-foreground">
-            <Menu size={20} />
-          </button>
-          <span className="text-lg tracking-tight" style={{ fontFamily: "'DM Serif Display', serif" }}>packwell.</span>
-          <button onClick={() => setShowSearch((v) => !v)} className="p-2 -mr-2 text-muted-foreground hover:text-foreground">
-            <Search size={18} />
-          </button>
+      {/* ── Main ── */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
+        {/* Mobile top bar */}
+        <header style={{ background: C.bg, borderBottom: `1px solid ${C.border}`, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }} className="md:hidden">
+          <button onClick={() => setShowDrawer(true)} style={{ background: "none", border: "none", color: C.muted, cursor: "pointer" }}><Menu size={20} /></button>
+          <span style={{ fontFamily: heading, fontSize: 18, fontWeight: 800, color: C.ink }}>packwell<span style={{ color: C.accent }}>.</span></span>
+          <button onClick={() => setSearch(s => s === "__open__" ? "" : "__open__")} style={{ background: "none", border: "none", color: C.muted, cursor: "pointer" }}><Search size={18} /></button>
         </header>
 
-        {/* Mobile search bar (expanded) */}
-        {showSearch && (
-          <div className="md:hidden px-4 py-2 border-b border-border bg-background">
-            <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input
-                autoFocus
-                type="text"
-                placeholder="Search items..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-input-background border border-border rounded-lg pl-8 pr-8 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-              />
-              <button onClick={() => { setSearchQuery(""); setShowSearch(false); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                <X size={13} />
-              </button>
-            </div>
-          </div>
-        )}
-
-        <main className="flex-1 overflow-y-auto">
+        <main style={{ flex: 1, overflowY: "auto" }}>
           {/* Trip header */}
-          <div className="px-4 md:px-8 pt-5 md:pt-8 pb-5 md:pb-6 border-b border-border">
-            <div className="flex items-start justify-between gap-3">
+          <div style={{ padding: "28px 32px 24px", borderBottom: `1px solid ${C.border}` }} className="px-4 md:px-8 pt-6 md:pt-8">
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
               <div>
-                <h1 className="text-2xl md:text-3xl text-foreground leading-tight" style={{ fontFamily: "'DM Serif Display', serif" }}>
+                <h1 style={{ fontFamily: heading, fontSize: 28, fontWeight: 600, color: C.ink, margin: 0, letterSpacing: "0" }}>
                   Lisbon & Porto
                 </h1>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5">
-                  <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
-                    <MapPin size={13} /><span>Portugal</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
-                    <Calendar size={13} /><span>Jul 12 – Jul 26, 2026</span>
-                  </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 6 }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: C.muted }}>
+                    <MapPin size={13} color={C.muted} />Portugal
+                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: C.muted }}>
+                    <Calendar size={13} color={C.muted} />Jul 12 – Jul 26, 2026
+                  </span>
                 </div>
               </div>
-              {/* Desktop add button */}
               <button
                 onClick={() => setShowAdd(true)}
-                className="hidden md:flex items-center gap-2 bg-accent text-accent-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-accent/90 transition-colors shrink-0"
+                style={{ display: "flex", alignItems: "center", gap: 6, background: C.accent, color: C.accentFg, border: "none", borderRadius: 10, padding: "9px 18px", fontSize: 14, fontWeight: 700, fontFamily: heading, cursor: "pointer", flexShrink: 0 }}
               >
                 <Plus size={15} />Add item
               </button>
             </div>
 
-            {/* Progress bar */}
-            <div className="mt-4">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs tracking-widest uppercase text-muted-foreground font-medium">Overall progress</span>
-                <span className="text-sm font-medium" style={{ fontFamily: "'DM Mono', monospace" }}>{packed}/{total}</span>
+            {/* Progress */}
+            <div style={{ marginTop: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase" }}>Overall progress</span>
+                <span style={{ fontSize: 13, color: C.ink, fontFamily: mono }}>{packed}/{total} items</span>
               </div>
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-accent rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+              <div style={{ height: 8, background: C.progressBg, borderRadius: 99, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${progress}%`, background: C.accent, borderRadius: 99, transition: "width 0.5s" }} />
               </div>
-              <p className="text-xs text-muted-foreground mt-1.5">{progress}% — {total - packed} still to pack</p>
+              <p style={{ fontSize: 12, color: C.muted, marginTop: 6 }}>{progress}% complete — {total - packed} items still to pack</p>
             </div>
           </div>
 
-          <div className="px-4 md:px-8 py-4 md:py-6">
-            {/* Bag chips — horizontal scroll on mobile */}
-            <div className="flex gap-2 overflow-x-auto pb-1 mb-5 -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap scrollbar-none">
+          <div style={{ padding: "20px 32px" }} className="px-4 md:px-8">
+
+            {/* Bag summary chips */}
+            <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, marginBottom: 20, scrollbarWidth: "none" }}>
               {bags.map((bag, idx) => {
-                const { total: bt, packed: bp, pct } = bagStats(bag, items);
+                const bi  = items.filter(i => i.bagId === bag.id);
+                const bp  = bi.filter(i => i.packed).length;
+                const col = BAG_COLORS[idx % BAG_COLORS.length];
                 return (
-                  <div key={bag.id} className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-card text-sm shrink-0">
-                    <div className={`w-6 h-6 rounded flex items-center justify-center ${BAG_COLORS[idx % BAG_COLORS.length]}`}>
-                      <BagIcon icon={bag.icon} size={13} />
+                  <div key={bag.id} style={{
+                    display: "flex", alignItems: "center", gap: 8, padding: "7px 12px",
+                    background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, flexShrink: 0,
+                  }}>
+                    <div style={{ width: 22, height: 22, borderRadius: 6, background: col.bg, color: col.fg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <BagIcon icon={bag.icon} size={12} />
                     </div>
-                    <span className="font-medium whitespace-nowrap">{bag.name}</span>
-                    <span className="text-muted-foreground text-xs" style={{ fontFamily: "'DM Mono', monospace" }}>{bp}/{bt}</span>
-                    {pct === 100 && bt > 0 && <span className="text-xs text-emerald-600">✓</span>}
+                    <span style={{ fontSize: 12, fontWeight: 600, color: C.ink }}>{bag.name}</span>
+                    <span style={{ fontSize: 11, color: C.muted, fontFamily: mono }}>{bp}/{bi.length}</span>
+                    {bp === bi.length && bi.length > 0 && <span style={{ color: C.ok, fontSize: 12 }}>✓</span>}
                   </div>
                 );
               })}
               {unbagged.length > 0 && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-dashed border-border text-sm text-muted-foreground shrink-0">
-                  <X size={12} /><span className="whitespace-nowrap">{unbagged.length} unbagged</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", border: `1px dashed ${C.border}`, borderRadius: 10, flexShrink: 0 }}>
+                  <X size={12} color={C.muted} />
+                  <span style={{ fontSize: 12, color: C.muted }}>{unbagged.length} unbagged</span>
                 </div>
               )}
             </div>
 
-            {/* View toggle + desktop search */}
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <div className="flex items-center bg-muted rounded-lg p-0.5 w-full md:w-auto">
-                {(["bags", "category", "list"] as const).map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => setView(v)}
-                    className={`flex-1 md:flex-none px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                      view === v ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
+            {/* View toggle + search */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", background: C.inputBg, borderRadius: 10, padding: 3 }}>
+                {(["bags", "category", "list"] as const).map(v => (
+                  <button key={v} onClick={() => setView(v)} style={{
+                    padding: "7px 14px", borderRadius: 8, border: "none", cursor: "pointer",
+                    background: view === v ? C.card : "transparent",
+                    color: view === v ? C.ink : C.muted,
+                    fontFamily: heading, fontSize: 13, fontWeight: view === v ? 700 : 500,
+                    boxShadow: view === v ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                    transition: "all 0.15s",
+                  }}>
                     {v === "bags" ? "By bag" : v === "category" ? "By category" : "All items"}
                   </button>
                 ))}
               </div>
-
-              {/* Desktop search */}
-              <div className="relative hidden md:block">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <div style={{ position: "relative" }} className="hidden md:block">
+                <Search size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: C.muted }} />
                 <input
-                  type="text"
-                  placeholder="Search items..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-input-background border border-border rounded-md pl-8 pr-8 py-2 text-sm w-52 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                  value={search} onChange={e => setSearch(e.target.value)}
+                  placeholder="Search items…"
+                  style={{ paddingLeft: 30, paddingRight: 28, paddingTop: 8, paddingBottom: 8, border: `1px solid ${C.border}`, borderRadius: 8, background: C.card, fontSize: 13, color: C.ink, outline: "none", width: 200, fontFamily: body }}
                 />
-                {searchQuery && (
-                  <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                    <X size={13} />
-                  </button>
-                )}
+                {search && <button onClick={() => setSearch("")} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: C.muted }}><X size={13} /></button>}
               </div>
             </div>
 
@@ -533,135 +385,81 @@ export default function App() {
               <div>
                 {bags.map((bag, idx) => (
                   <BagCard
-                    key={bag.id}
-                    bag={bag}
-                    items={filtered(items.filter((i) => i.bagId === bag.id))}
-                    colorClass={BAG_COLORS[idx % BAG_COLORS.length]}
+                    key={bag.id} bag={bag}
+                    items={filtered(items.filter(i => i.bagId === bag.id))}
+                    color={BAG_COLORS[idx % BAG_COLORS.length]}
+                    onToggleAll={p => toggleAllBag(bag.id, p)}
                     onDelete={() => deleteBag(bag.id)}
-                    onToggleAll={(p) => toggleAllBag(bag.id, p)}
                   />
                 ))}
-
-                {filteredUnbagged.length > 0 && (
-                  <div className="bg-card border border-dashed border-border rounded-xl overflow-hidden mb-3">
-                    <div className="flex items-center gap-3 px-4 py-3 border-b border-border/40">
-                      <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-muted text-muted-foreground shrink-0">
-                        <X size={14} />
-                      </div>
-                      <span className="text-sm font-medium text-muted-foreground">Unbagged</span>
-                      <span className="text-xs text-muted-foreground ml-auto" style={{ fontFamily: "'DM Mono', monospace" }}>
-                        {filteredUnbagged.filter((i) => i.packed).length}/{filteredUnbagged.length}
-                      </span>
+                {filtered(unbagged).length > 0 && (
+                  <div style={{ background: C.card, border: `1px dashed ${C.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: `1px solid ${C.border}` }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 10, background: C.inputBg, display: "flex", alignItems: "center", justifyContent: "center" }}><X size={14} color={C.muted} /></div>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: C.muted, fontFamily: heading }}>Unbagged</span>
+                      <span style={{ marginLeft: "auto", fontSize: 11, color: C.muted, fontFamily: mono }}>{filtered(unbagged).filter(i => i.packed).length}/{filtered(unbagged).length}</span>
                     </div>
-                    {filteredUnbagged.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center gap-3 px-4 py-4 border-b border-border/30 last:border-b-0 hover:bg-muted/10 transition-colors cursor-pointer"
-                        onClick={() => toggleItem(item.id)}
-                      >
-                        <button className="shrink-0 text-muted-foreground">
-                          {item.packed ? <CheckSquare size={18} className="text-accent" /> : <Square size={18} />}
-                        </button>
-                        <span className={`flex-1 text-sm ${item.packed ? "line-through text-muted-foreground" : ""}`}>{item.name}</span>
+                    {filtered(unbagged).map((item, i) => (
+                      <div key={item.id} onClick={() => toggle(item.id)} style={{
+                        display: "flex", alignItems: "center", gap: 10, padding: "11px 16px",
+                        borderBottom: i < filtered(unbagged).length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer",
+                      }}>
+                        {item.packed ? <CheckSquare size={16} color={C.accent} /> : <Square size={16} color={C.muted} />}
+                        <span style={{ fontSize: 13, color: item.packed ? C.muted : C.ink, textDecoration: item.packed ? "line-through" : "none" }}>{item.name}</span>
                       </div>
                     ))}
                   </div>
                 )}
-
-                {addingBag ? (
-                  <div className="bg-card border border-accent/40 rounded-xl p-4 flex flex-wrap items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      {(["luggage", "backpack", "tote"] as Bag["icon"][]).map((icon) => (
-                        <button
-                          key={icon}
-                          onClick={() => setNewBagIcon(icon)}
-                          className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${newBagIcon === icon ? "bg-accent text-white" : "bg-muted text-muted-foreground"}`}
-                        >
-                          <BagIcon icon={icon} />
-                        </button>
-                      ))}
-                    </div>
-                    <input
-                      autoFocus
-                      type="text"
-                      placeholder="Bag name (e.g. Blue duffel)..."
-                      value={newBagName}
-                      onChange={(e) => setNewBagName(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") addBag(); if (e.key === "Escape") setAddingBag(false); }}
-                      className="flex-1 min-w-0 bg-transparent text-sm focus:outline-none placeholder:text-muted-foreground"
-                    />
-                    <button onClick={addBag} className="bg-accent text-accent-foreground px-3 py-2 rounded-lg text-xs font-medium hover:bg-accent/90 transition-colors">
-                      Add bag
-                    </button>
-                    <button onClick={() => setAddingBag(false)} className="text-muted-foreground hover:text-foreground"><X size={15} /></button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setAddingBag(true)}
-                    className="w-full flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground border border-dashed border-border rounded-xl py-3.5 text-sm transition-colors hover:bg-muted/20"
-                  >
-                    <Plus size={14} />Add a bag
-                  </button>
-                )}
+                <button style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "12px", border: `1px dashed ${C.border}`, borderRadius: 14, background: "transparent", color: C.muted, fontSize: 13, fontFamily: heading, cursor: "pointer" }}>
+                  <Plus size={14} />Add a bag
+                </button>
               </div>
             )}
 
             {/* ── By category ── */}
             {view === "category" && (
               <div>
-                {CATEGORIES.map((cat) => {
-                  const catItems  = filtered(items.filter((i) => i.category === cat.name));
-                  const catPacked = catItems.filter((i) => i.packed).length;
+                {CATEGORIES.map(cat => {
+                  const catItems  = filtered(items.filter(i => i.category === cat.name));
+                  const catPacked = catItems.filter(i => i.packed).length;
                   const catPct    = catItems.length > 0 ? Math.round((catPacked / catItems.length) * 100) : 0;
                   const Icon      = cat.icon;
                   return (
-                    <div key={cat.name} className="bg-card border border-border rounded-xl overflow-hidden mb-3">
-                      <div className="flex items-center gap-3 px-4 py-3 border-b border-border/60">
-                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${cat.color}`}>
+                    <div key={cat.name} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: `1px solid ${C.border}` }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: cat.bg, color: cat.fg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                           <Icon size={15} />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">{cat.name}</span>
-                            {catPct === 100 && catItems.length > 0 && (
-                              <span className="text-xs bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-medium">Packed</span>
-                            )}
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontSize: 14, fontWeight: 600, color: C.ink, fontFamily: heading }}>{cat.name}</span>
+                            {catPct === 100 && catItems.length > 0 && <span style={{ fontSize: 11, background: C.okBg, color: C.ok, padding: "1px 8px", borderRadius: 99, fontWeight: 600 }}>Packed ✓</span>}
                           </div>
-                          <div className="flex items-center gap-3 mt-1">
-                            <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
-                              <div className="h-full bg-accent rounded-full transition-all duration-500" style={{ width: `${catPct}%` }} />
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                            <div style={{ flex: 1, height: 4, background: C.progressBg, borderRadius: 99, overflow: "hidden" }}>
+                              <div style={{ height: "100%", width: `${catPct}%`, background: C.accent, borderRadius: 99 }} />
                             </div>
-                            <span className="text-xs text-muted-foreground shrink-0" style={{ fontFamily: "'DM Mono', monospace" }}>
-                              {catPacked}/{catItems.length}
-                            </span>
+                            <span style={{ fontSize: 11, color: C.muted, fontFamily: mono }}>{catPacked}/{catItems.length}</span>
                           </div>
                         </div>
                       </div>
-                      {catItems.length === 0 ? (
-                        <p className="text-xs text-muted-foreground px-4 py-4 italic">No items in this category.</p>
-                      ) : (
-                        catItems.map((item) => {
-                          const assignedBag = bags.find((b) => b.id === item.bagId);
-                          return (
-                            <div
-                              key={item.id}
-                              className="flex items-center gap-3 px-4 py-4 border-b border-border/30 last:border-b-0 hover:bg-muted/10 transition-colors cursor-pointer"
-                              onClick={() => toggleItem(item.id)}
-                            >
-                              <button className="shrink-0 text-muted-foreground">
-                                {item.packed ? <CheckSquare size={18} className="text-accent" /> : <Square size={18} />}
-                              </button>
-                              <span className={`flex-1 text-sm ${item.packed ? "line-through text-muted-foreground" : ""}`}>{item.name}</span>
-                              {assignedBag && (
-                                <span className="flex items-center gap-1 text-xs text-muted-foreground px-2 py-0.5 bg-muted rounded-full shrink-0">
-                                  <BagIcon icon={assignedBag.icon} size={11} />
-                                  <span className="hidden sm:inline">{assignedBag.name}</span>
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })
-                      )}
+                      {catItems.map((item, i) => {
+                        const bag = bags.find(b => b.id === item.bagId);
+                        return (
+                          <div key={item.id} onClick={() => toggle(item.id)} style={{
+                            display: "flex", alignItems: "center", gap: 10, padding: "11px 16px",
+                            borderBottom: i < catItems.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer",
+                          }}>
+                            {item.packed ? <CheckSquare size={16} color={C.accent} /> : <Square size={16} color={C.muted} />}
+                            <span style={{ flex: 1, fontSize: 13, color: item.packed ? C.muted : C.ink, textDecoration: item.packed ? "line-through" : "none" }}>{item.name}</span>
+                            {bag && (
+                              <span style={{ fontSize: 11, padding: "2px 8px", background: C.pill, color: C.pillInk, borderRadius: 99 }}>
+                                {bag.name}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   );
                 })}
@@ -670,39 +468,29 @@ export default function App() {
 
             {/* ── All items ── */}
             {view === "list" && (
-              <div className="bg-card border border-border rounded-xl overflow-hidden">
-                {(["unpacked", "packed"] as const).map((group) => {
-                  const groupItems = filtered(items).filter((i) => group === "packed" ? i.packed : !i.packed);
+              <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, overflow: "hidden" }}>
+                {(["unpacked", "packed"] as const).map(group => {
+                  const groupItems = filtered(items).filter(i => group === "packed" ? i.packed : !i.packed);
                   if (groupItems.length === 0) return null;
                   return (
                     <div key={group}>
-                      <div className="px-4 py-2.5 bg-muted/40 border-b border-border">
-                        <span className="text-xs tracking-widest uppercase font-medium text-muted-foreground">
+                      <div style={{ padding: "8px 16px", background: C.inputBg, borderBottom: `1px solid ${C.border}` }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: C.muted, letterSpacing: "0.08em", textTransform: "uppercase" }}>
                           {group === "unpacked" ? `To pack — ${groupItems.length}` : `Packed — ${groupItems.length}`}
                         </span>
                       </div>
-                      {groupItems.map((item) => {
-                        const assignedBag = bags.find((b) => b.id === item.bagId);
+                      {groupItems.map((item, i) => {
+                        const bag = bags.find(b => b.id === item.bagId);
                         return (
-                          <div
-                            key={item.id}
-                            className="flex items-center gap-3 px-4 py-4 border-b border-border/40 last:border-b-0 hover:bg-muted/20 transition-colors cursor-pointer"
-                            onClick={() => toggleItem(item.id)}
-                          >
-                            <button className="shrink-0 text-muted-foreground">
-                              {item.packed ? <CheckSquare size={18} className="text-accent" /> : <Square size={18} />}
-                            </button>
-                            <span className={`flex-1 text-sm ${item.packed ? "line-through text-muted-foreground" : ""}`}>{item.name}</span>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <span className="text-xs text-muted-foreground px-2 py-0.5 bg-muted rounded-full hidden sm:inline">
-                                {item.category}
-                              </span>
-                              {assignedBag && (
-                                <span className="flex items-center gap-1 text-xs text-muted-foreground px-2 py-0.5 bg-muted rounded-full">
-                                  <BagIcon icon={assignedBag.icon} size={11} />
-                                  <span className="hidden sm:inline">{assignedBag.name}</span>
-                                </span>
-                              )}
+                          <div key={item.id} onClick={() => toggle(item.id)} style={{
+                            display: "flex", alignItems: "center", gap: 10, padding: "12px 16px",
+                            borderBottom: i < groupItems.length - 1 ? `1px solid ${C.border}` : "none", cursor: "pointer",
+                          }}>
+                            {item.packed ? <CheckSquare size={16} color={C.accent} /> : <Square size={16} color={C.muted} />}
+                            <span style={{ flex: 1, fontSize: 13, color: item.packed ? C.muted : C.ink, textDecoration: item.packed ? "line-through" : "none" }}>{item.name}</span>
+                            <div style={{ display: "flex", gap: 6 }}>
+                              <span style={{ fontSize: 11, padding: "2px 8px", background: C.inputBg, color: C.muted, borderRadius: 99 }}>{item.category}</span>
+                              {bag && <span style={{ fontSize: 11, padding: "2px 8px", background: C.pill, color: C.pillInk, borderRadius: 99 }}>{bag.name}</span>}
                             </div>
                           </div>
                         );
@@ -713,8 +501,7 @@ export default function App() {
               </div>
             )}
 
-            {/* Bottom padding so FAB doesn't cover last item */}
-            <div className="h-20 md:hidden" />
+            <div style={{ height: 80 }} className="md:hidden" />
           </div>
         </main>
       </div>
@@ -722,14 +509,50 @@ export default function App() {
       {/* ── Mobile FAB ── */}
       <button
         onClick={() => setShowAdd(true)}
-        className="md:hidden fixed bottom-6 right-5 z-30 w-14 h-14 bg-accent text-accent-foreground rounded-full shadow-lg flex items-center justify-center hover:bg-accent/90 transition-colors active:scale-95"
+        style={{ position: "fixed", bottom: 24, right: 20, width: 56, height: 56, borderRadius: "50%", background: C.accent, color: "#fff", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(212,146,10,0.45)", zIndex: 30 }}
+        className="md:hidden"
       >
         <Plus size={22} />
       </button>
 
-      {/* ── Overlays ── */}
-      {showAdd    && <AddItemSheet bags={bags} onAdd={addItem} onClose={() => setShowAdd(false)} />}
-      {showDrawer && <TripsDrawer trips={TRIPS} packed={packed} total={total} onClose={() => setShowDrawer(false)} />}
+      {/* ── Add item sheet ── */}
+      {showAdd && (
+        <>
+          <div onClick={() => setShowAdd(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", backdropFilter: "blur(2px)", zIndex: 40 }} />
+          <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 20 }}>
+            <div style={{ background: C.card, borderRadius: 20, width: "100%", maxWidth: 440, padding: 24, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+                <h2 style={{ fontFamily: heading, fontSize: 18, fontWeight: 800, color: C.ink, margin: 0 }}>Add item</h2>
+                <button onClick={() => setShowAdd(false)} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted }}><X size={18} /></button>
+              </div>
+              <input
+                autoFocus value={newName} onChange={e => setNewName(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") addItem(); if (e.key === "Escape") setShowAdd(false); }}
+                placeholder="Item name…"
+                style={{ width: "100%", padding: "12px 14px", border: `1px solid ${C.border}`, borderRadius: 10, background: C.inputBg, fontSize: 14, color: C.ink, outline: "none", marginBottom: 14, boxSizing: "border-box", fontFamily: body }}
+              />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: 6 }}>Category</label>
+                  <select value={newCat} onChange={e => setNewCat(e.target.value)} style={{ width: "100%", padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, background: C.inputBg, fontSize: 13, color: C.ink, outline: "none", fontFamily: body }}>
+                    {CATEGORIES.map(c => <option key={c.name}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: 6 }}>Bag</label>
+                  <select value={newBag ?? ""} onChange={e => setNewBag(e.target.value ? Number(e.target.value) : null)} style={{ width: "100%", padding: "9px 12px", border: `1px solid ${C.border}`, borderRadius: 8, background: C.inputBg, fontSize: 13, color: C.ink, outline: "none", fontFamily: body }}>
+                    <option value="">No bag</option>
+                    {bags.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </div>
+              </div>
+              <button onClick={addItem} style={{ width: "100%", padding: "13px", background: C.accent, color: C.accentFg, border: "none", borderRadius: 12, fontSize: 15, fontWeight: 700, fontFamily: heading, cursor: "pointer" }}>
+                Add to list
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

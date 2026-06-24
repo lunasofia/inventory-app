@@ -263,7 +263,7 @@ input.qty { width: 4rem; }
 /* diff view  (note: mapped to this codebase's vars — --line=border,
    --muted=muted text, --muted-surface=muted background) */
 .diff-header { margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; }
-.diff-select-all { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; width: fit-content; }
+.diff-select-all { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; width: fit-content; white-space: nowrap; }
 .diff-select-count { font-size: 0.8rem; }
 
 .diff-section { border: 1px solid var(--line); border-radius: 0.6rem; overflow: hidden; margin-bottom: 1rem; background: var(--card); }

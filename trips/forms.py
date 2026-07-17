@@ -5,6 +5,7 @@ from catalog.models import Category
 from accounts.models import User
 
 from .models import Bag, PackingItem, Template, TemplateItem, TemplateShare, Trip, TripShare
+from .csv_import import parse_items_csv
 
 
 class TripForm(forms.ModelForm):
@@ -254,3 +255,51 @@ class ReminderForm(forms.Form):
         if not text:
             raise forms.ValidationError('Reminder text is required.')
         return text
+
+
+class TemplateCsvImportForm(forms.Form):
+    """Create a new template from a CSV upload. Enforces per-owner unique name."""
+
+    name = forms.CharField(max_length=140, label='Template name')
+    file = forms.FileField(label='CSV file')
+
+    def __init__(self, *args, owner=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.owner = owner
+
+    def clean_name(self):
+        name = self.cleaned_data['name'].strip()
+        if not name:
+            raise forms.ValidationError('Template name is required.')
+        dupes = Template.objects.filter(owner=self.owner, name__iexact=name)
+        if dupes.exists():
+            raise forms.ValidationError('You already have a template with that name.')
+        return name
+
+    def clean_file(self):
+        f = self.cleaned_data.get('file')
+        if f is None:
+            raise forms.ValidationError('Please choose a CSV file.')
+        rows, skipped, error = parse_items_csv(f)
+        if error:
+            raise forms.ValidationError(error)
+        self.cleaned_data['_parsed_rows'] = rows
+        self.cleaned_data['_parsed_skipped'] = skipped
+        return f
+
+
+class ItemsCsvUploadForm(forms.Form):
+    """Upload a CSV to append items to an existing template or trip."""
+
+    file = forms.FileField(label='CSV file')
+
+    def clean_file(self):
+        f = self.cleaned_data.get('file')
+        if f is None:
+            raise forms.ValidationError('Please choose a CSV file.')
+        rows, skipped, error = parse_items_csv(f)
+        if error:
+            raise forms.ValidationError(error)
+        self.cleaned_data['_parsed_rows'] = rows
+        self.cleaned_data['_parsed_skipped'] = skipped
+        return f

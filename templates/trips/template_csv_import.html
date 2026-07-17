@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Import CSV · Templates · Packwell{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>Import CSV as new template</h1>
+  <p class="muted">Upload a CSV with columns <code>name</code>, <code>quantity</code>, and <code>category</code> to create a new template.</p>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {{ form.as_p }}
+    <div class="form-actions">
+      <button class="btn primary" type="submit">Import</button>
+      <a class="btn" href="{% url 'template_list' %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

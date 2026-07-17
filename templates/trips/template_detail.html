@@ -10,9 +10,11 @@
       {% if permission == 'owner' %}
         <button class="btn primary" type="button" onclick="openModal('template-share-modal')">Share</button>
         <a class="btn" href="{% url 'template_edit' template.pk %}">Edit details</a>
+        <a class="btn" href="{% url 'template_item_import' template.pk %}">Import CSV</a>
         <a class="btn" href="{% url 'template_delete' template.pk %}">Delete</a>
       {% elif can_edit %}
         <a class="btn" href="{% url 'template_edit' template.pk %}">Edit details</a>
+        <a class="btn" href="{% url 'template_item_import' template.pk %}">Import CSV</a>
       {% endif %}
   </div>
 </div>

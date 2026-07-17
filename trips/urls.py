@@ -30,6 +30,7 @@ urlpatterns = [
     # Templates / reuse
     path('templates/', views.template_list, name='template_list'),
     path('templates/new/', views.template_create, name='template_create'),
+    path('templates/import/', views.template_import_csv, name='template_import_csv'),
     path('trips/<int:pk>/save-template/', views.save_as_template, name='save_as_template'),
     path('trips/<int:pk>/diff/', views.template_diff, name='template_diff'),
     path('templates/<int:pk>/', views.template_detail, name='template_detail'),
@@ -37,6 +38,7 @@ urlpatterns = [
     path('templates/<int:pk>/share/suggest/', views.template_collaborator_suggest, name='template_collaborator_suggest'),
     path('templates/<int:pk>/share/<int:share_pk>/update/', views.template_share_update, name='template_share_update'),
     path('templates/<int:pk>/share/<int:share_pk>/revoke/', views.template_share_revoke, name='template_share_revoke'),
+    path('templates/<int:pk>/import/', views.template_item_import, name='template_item_import'),
     path('templates/<int:pk>/edit/', views.template_edit, name='template_edit'),
     path('templates/<int:pk>/delete/', views.template_delete, name='template_delete'),
     path('templates/<int:pk>/items/add/', views.template_item_add, name='template_item_add'),
@@ -46,6 +48,7 @@ urlpatterns = [
     path('templates/<int:pk>/reminders/add/', views.template_reminder_add, name='template_reminder_add'),
     path('templates/<int:pk>/reminders/<int:reminder_pk>/delete/', views.template_reminder_delete, name='template_reminder_delete'),
     # Final-check exit page + reminders
+    path('trips/<int:pk>/import/', views.trip_item_import, name='trip_item_import'),
     path('trips/<int:pk>/exit/', views.exit_page, name='exit_page'),
     path('trips/<int:pk>/exit/items/<int:item_pk>/toggle/', views.exit_item_toggle, name='exit_item_toggle'),
     path('trips/<int:pk>/exit/reminders/add/', views.trip_reminder_add, name='trip_reminder_add'),

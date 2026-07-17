@@ -361,13 +361,39 @@ A "Final check" page (from the trip board) with two lists for any departure.
   full page load (not yet remembered across visits). Unbagged group shown last.
 - Bag names are **unique (case-insensitive) per trip**.
 
+## 21. CSV import (templates & packing lists)
+
+Populate a template or a trip's packing list by uploading a CSV instead of
+typing items one at a time.
+
+| # | Steps | Expected |
+|---|-------|----------|
+| 21.1 | Templates list → "Import CSV", enter a name + choose a CSV | New template created; items imported; redirected to it with `Imported N items…` |
+| 21.2 | Template detail (edit rights) → "Import CSV" | Items appended after existing ones; counts in the message |
+| 21.3 | Trip planning (edit rights) → "Import CSV" | Items appended to the packing list; catalog remembers them; default condition set |
+| 21.4 | CSV with header `name,quantity,category` (any order/case) | `name` required; blank names skipped; blank/invalid quantity → 1; category auto-created by name |
+| 21.5 | CSV missing a `name` column | Form error; nothing created |
+| 21.6 | Empty file / zero valid rows | Friendly "No items found" message; nothing created |
+| 21.7 | Non-UTF-8 or over 1 MB / 500 rows | Form error; nothing created |
+| 21.8 | View-only collaborator hits an import endpoint | 404 |
+
+## Resolved design decisions (CSV import)
+
+- Columns `name` / `quantity` / `category`, header required, matched
+  case-insensitively in any order; extra columns ignored. UTF-8 (+ BOM); caps
+  1 MB / 500 rows. Whole import is one transaction.
+- Category names resolve to the **acting** user (shared-template safety); trip
+  imports mirror normal add-item (catalog `_remember_item` + default condition).
+- Uploads are plain full-page POSTs (not HTMX) — simpler for file inputs.
+
 ## Coverage notes
 
 - **Covered through Task #6 + category management:** auth, profiles, dashboard,
   trip CRUD, the packing-list planning view, bags/containers, check-off packing
   mode, templates/reuse (incl. the diff/drift flow), and category add/rename/delete.
 - **Also covered:** category management, the Packwell UI overhaul (sidebar +
-  unified trip board), and **sharing** (Task #8, incl. recent collaborators).
+  unified trip board), **sharing** (Task #8, incl. recent collaborators), and
+  **CSV import** (templates + packing lists).
 - **Not yet covered (future tasks):** unpacking mode (Task 7); people (#14);
   buy-when-there (#15); category-level marking (#16). Deferred: bag
   (re)assignment during packing; templates capturing bags; sharing

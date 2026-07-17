@@ -40,6 +40,9 @@
   {% if can_edit %}
     {% include 'trips/_bags_bar.html' %}
     {% include 'trips/_categories.html' %}
+    <div class="board-controls">
+      <a class="btn" href="{% url 'trip_item_import' trip.pk %}">Import CSV</a>
+    </div>
   {% endif %}
 
   {% include 'trips/_packing_list.html' %}

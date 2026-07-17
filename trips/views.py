@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.db.models import F, Max, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
@@ -10,10 +11,13 @@ from catalog.models import Category, Condition, Item
 
 from accounts.models import User
 
+from .csv_import import parse_items_csv
 from .forms import (
     BagForm,
     CategoryForm,
+    ItemsCsvUploadForm,
     PackingItemForm,
+    TemplateCsvImportForm,
     TemplateForm,
     TemplateItemForm,
     TemplateShareForm,
@@ -44,6 +48,24 @@ def _resolve_owner_category(owner, category):
         return category
     cat, _ = Category.objects.get_or_create(owner=owner, name=category.name)
     return cat
+
+
+def _resolve_category_by_name(owner, name):
+    """Find (case-insensitively) or create the owner's category by name.
+    Returns None for a blank/None name (used by CSV import)."""
+    if not name:
+        return None
+    cat = Category.objects.filter(owner=owner, name__iexact=name).first()
+    if cat is None:
+        cat = Category.objects.create(owner=owner, name=name)
+    return cat
+
+
+def _import_summary(n, target_name, skipped):
+    """Success message for a CSV import; mentions skipped rows only if any."""
+    items = f'{n} item{"" if n == 1 else "s"}'
+    tail = f' ({skipped} row{"" if skipped == 1 else "s"} skipped)' if skipped else ''
+    return f'Imported {items} into "{target_name}"{tail}.'
 
 
 def _link_catalog_no_bump(owner, name, category):
@@ -429,6 +451,107 @@ def template_create(request):
 def _render_template_items(request, template, add_form=None, can_edit=None):
     return render(request, 'trips/_template_items.html',
                   _template_context(request, template, add_form, can_edit))
+
+
+@login_required
+def template_import_csv(request):
+    """Create a new template from a CSV upload."""
+    if request.method == 'POST':
+        form = TemplateCsvImportForm(request.POST, request.FILES, owner=request.user)
+        if form.is_valid():
+            rows = form.cleaned_data['_parsed_rows']
+            skipped = form.cleaned_data['_parsed_skipped']
+            if not rows:
+                messages.warning(request, 'No items found in the CSV — nothing was created.')
+                return render(request, 'trips/template_csv_import.html', {'form': form})
+            name = form.cleaned_data['name']
+            with transaction.atomic():
+                template = Template.objects.create(owner=request.user, name=name)
+                for i, row in enumerate(rows, start=1):
+                    TemplateItem.objects.create(
+                        template=template,
+                        name=row['name'],
+                        quantity=row['quantity'],
+                        category=_resolve_category_by_name(request.user, row['category_name']),
+                        sort_order=i,
+                    )
+            messages.success(request, _import_summary(len(rows), name, skipped))
+            return redirect('template_detail', pk=template.pk)
+    else:
+        form = TemplateCsvImportForm(owner=request.user)
+    return render(request, 'trips/template_csv_import.html', {'form': form})
+
+
+@login_required
+def template_item_import(request, pk):
+    """Append items from a CSV to an existing template (edit permission required)."""
+    template, permission = _get_template_or_404(request.user, pk, require_edit=True)
+    if request.method == 'POST':
+        form = ItemsCsvUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            rows = form.cleaned_data['_parsed_rows']
+            skipped = form.cleaned_data['_parsed_skipped']
+            if not rows:
+                messages.warning(request, 'No items found in the CSV — nothing was added.')
+                return redirect('template_detail', pk=template.pk)
+            with transaction.atomic():
+                base_order = (template.items.aggregate(m=Max('sort_order'))['m'] or 0)
+                for i, row in enumerate(rows, start=1):
+                    TemplateItem.objects.create(
+                        template=template,
+                        name=row['name'],
+                        quantity=row['quantity'],
+                        category=_resolve_category_by_name(request.user, row['category_name']),
+                        sort_order=base_order + i,
+                    )
+            messages.success(request, _import_summary(len(rows), template.name, skipped))
+            return redirect('template_detail', pk=template.pk)
+    else:
+        form = ItemsCsvUploadForm()
+    return render(request, 'trips/items_csv_import.html', {
+        'form': form,
+        'target': template,
+        'target_type': 'template',
+        'cancel_url': reverse('template_detail', args=[pk]),
+    })
+
+
+@login_required
+def trip_item_import(request, pk):
+    """Append items from a CSV to a trip's packing list (edit permission required)."""
+    trip, permission = _get_trip_or_404(request.user, pk, require_edit=True)
+    if request.method == 'POST':
+        form = ItemsCsvUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            rows = form.cleaned_data['_parsed_rows']
+            skipped = form.cleaned_data['_parsed_skipped']
+            if not rows:
+                messages.warning(request, 'No items found in the CSV — nothing was added.')
+                return redirect('trip_detail', pk=trip.pk)
+            default_cond = Condition.objects.filter(owner=trip.owner, is_default=True).first()
+            with transaction.atomic():
+                base_order = (trip.items.aggregate(m=Max('sort_order'))['m'] or 0)
+                for i, row in enumerate(rows, start=1):
+                    category = _resolve_category_by_name(request.user, row['category_name'])
+                    PackingItem.objects.create(
+                        trip=trip,
+                        name=row['name'],
+                        quantity=row['quantity'],
+                        category=category,
+                        condition=default_cond,
+                        catalog_item=_remember_item(request.user, row['name'], category),
+                        sort_order=base_order + i,
+                    )
+            messages.success(request, _import_summary(len(rows), trip.name, skipped))
+            return redirect('trip_detail', pk=trip.pk)
+    else:
+        form = ItemsCsvUploadForm()
+    return render(request, 'trips/items_csv_import.html', {
+        'form': form,
+        'target': trip,
+        'target_type': 'trip',
+        'cancel_url': reverse('trip_detail', args=[pk]),
+    })
 
 
 @login_required

@@ -9,10 +9,10 @@ from .csv_import import parse_items_csv
 
 
 class TripForm(forms.ModelForm):
-    # Non-model field: optionally start a new trip from a template (create only).
-    start_from_template = forms.ModelChoiceField(
-        queryset=Template.objects.none(), required=False, empty_label='Start blank',
-        label='Start from template',
+    # Non-model field: optionally start a new trip from one or more templates (create only).
+    start_from_template = forms.ModelMultipleChoiceField(
+        queryset=Template.objects.none(), required=False,
+        label='Start from templates',
     )
 
     class Meta:

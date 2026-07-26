@@ -15,6 +15,7 @@
     <div class="form-actions">
       {% if can_edit %}<button class="btn primary" type="button" onclick="openModal('add-item-modal')">＋ Add item</button>{% endif %}
       {% if can_edit %}<a class="btn" href="{% url 'trip_item_import' trip.pk %}">Import CSV</a>{% endif %}
+      {% if can_edit %}<button class="btn" type="button" onclick="openModal('add-from-template-modal')">Add from template</button>{% endif %}
       <a class="btn" href="{% url 'exit_page' trip.pk %}">✓ Final check</a>
       {% if permission == 'owner' %}<button class="btn" type="button" onclick="openModal('share-modal')">Share</button>{% endif %}
       <a class="btn" href="{% url 'save_as_template' trip.pk %}">Save as template</a>
@@ -38,6 +39,32 @@
       <h2>Share “{{ trip.name }}”</h2>
       <p class="muted" style="margin-top:-0.5rem">People you add can view or edit this trip's list.</p>
       {% include 'trips/_share_panel.html' %}
+    </div>
+  </div>
+{% endif %}
+
+{% if can_edit %}
+  <div class="modal" id="add-from-template-modal">
+    <div class="modal-scrim" onclick="closeModal('add-from-template-modal')"></div>
+    <div class="modal-card">
+      <h2>Add from template</h2>
+      {% if add_template_options %}
+        <form hx-post="{% url 'trip_add_template' trip.pk %}" hx-target="#planning" hx-swap="outerHTML"
+              hx-on::after-request="closeModal('add-from-template-modal')">
+          {% csrf_token %}
+          <div style="margin-bottom:0.7rem">
+            <label>Template</label>
+            <select name="template" style="width:100%">
+              {% for tpl in add_template_options %}
+                <option value="{{ tpl.pk }}">{{ tpl.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button class="btn primary" type="submit" style="width:100%; justify-content:center">Add to list</button>
+        </form>
+      {% else %}
+        <p class="muted">You have no templates yet.</p>
+      {% endif %}
     </div>
   </div>
 {% endif %}

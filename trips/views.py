@@ -936,6 +936,32 @@ def item_row(request, pk, item_pk):
 
 
 @login_required
+def item_move(request, pk, item_pk):
+    """Quick-reassign an item to another bag (bag lens) or category (category
+    lens) without opening the full edit form. The target field follows the
+    current group lens."""
+    trip, permission = _get_trip_or_404(request.user, pk, require_edit=True)
+    item = get_object_or_404(PackingItem, pk=item_pk, trip=trip)
+    mode = _group_mode(request, trip)  # 'bag' or 'category' ('all' has no move button)
+
+    if request.method == 'POST':
+        target_id = request.POST.get(mode) or None
+        if mode == 'bag':
+            item.bag = trip.bags.filter(pk=target_id).first() if target_id else None
+        else:
+            item.category = (Category.objects.filter(owner=request.user, pk=target_id).first()
+                             if target_id else None)
+        item.save(update_fields=['bag' if mode == 'bag' else 'category'])
+        return _render_planning(request, trip, permission)
+
+    targets = (trip.bags.all() if mode == 'bag'
+               else Category.objects.filter(owner=request.user))
+    return render(request, 'trips/_item_move_row.html', {
+        'trip': trip, 'item': item, 'mode': mode, 'targets': targets,
+    })
+
+
+@login_required
 @require_POST
 def item_delete(request, pk, item_pk):
     trip, permission = _get_trip_or_404(request.user, pk, require_edit=True)

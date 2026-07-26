@@ -185,8 +185,10 @@ def test_hide_packed_toggle_renders_htmx_attributes(auth_client, trip):
     # hx-target must point to #planning with ASCII quotes
     assert 'hx-target="#planning"' in content
 
-    # The hide-packed button must exist in the output
-    assert 'hide-packed-toggle' in content
+    # The hide-packed toggle must exist in the output (styled as a view-toggle
+    # segment to match the grouping lens); assert on stable label + endpoint.
+    assert 'Hide packed' in content
+    assert reverse('set_hide_packed', args=[trip.pk]) in content
 
     # No smart/curly quotes used as attribute value delimiters (=<smart-quote>)
     # Prose text like the empty-state message is acceptable; attribute values must use ASCII

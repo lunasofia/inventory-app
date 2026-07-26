@@ -35,8 +35,11 @@
       <button class="{% if group_mode == 'all' %}active{% endif %}"
               hx-get="{% url 'set_group' trip.pk %}?mode=all" hx-target="#planning" hx-swap="outerHTML">All items</button>
     </div>
-    <button class="hide-packed-toggle {% if hide_packed %}active{% endif %}"
-            hx-get="{% url 'set_hide_packed' trip.pk %}?on={% if hide_packed %}0{% else %}1{% endif %}" hx-target="#planning" hx-swap="outerHTML">Hide packed</button>
+    <div class="view-toggle">
+      <button class="{% if hide_packed %}active{% endif %}"
+              hx-get="{% url 'set_hide_packed' trip.pk %}?on={% if hide_packed %}0{% else %}1{% endif %}"
+              hx-target="#planning" hx-swap="outerHTML">Hide packed</button>
+    </div>
   </div>
 
   {% if can_edit %}

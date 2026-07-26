@@ -81,6 +81,35 @@ def test_grouping_alphabetical_with_uncategorized_last(user, trip):
     assert headings == ['Clothing', 'Documents', 'Uncategorized']
 
 
+def test_items_within_bucket_sorted_by_bag_then_name(user, trip):
+    """In category mode, a bucket sorts by bag then name; unbagged last."""
+    from trips.models import Bag
+    alpha = Bag.objects.create(trip=trip, name='Alpha')
+    zeta = Bag.objects.create(trip=trip, name='Zeta')
+    clothing = user.categories.get(name='Clothing')
+    # deliberately insert out of desired display order
+    PackingItem.objects.create(trip=trip, name='Scarf', category=clothing)  # unbagged
+    PackingItem.objects.create(trip=trip, name='Socks', category=clothing, bag=zeta)
+    PackingItem.objects.create(trip=trip, name='Boots', category=clothing, bag=alpha)
+    PackingItem.objects.create(trip=trip, name='Ascot', category=clothing, bag=zeta)
+    (_heading, _bag, items), = _grouped_items(trip, 'category')
+    assert [i.name for i in items] == ['Boots', 'Ascot', 'Socks', 'Scarf']
+
+
+def test_items_within_bag_bucket_sorted_by_category_then_name(user, trip):
+    """In bag mode, a bucket sorts by category then name; uncategorized last."""
+    from trips.models import Bag
+    bag = Bag.objects.create(trip=trip, name='Duffel')
+    clothing = user.categories.get(name='Clothing')
+    docs = user.categories.get(name='Documents')
+    PackingItem.objects.create(trip=trip, name='Gum', bag=bag)  # uncategorized
+    PackingItem.objects.create(trip=trip, name='Socks', bag=bag, category=clothing)
+    PackingItem.objects.create(trip=trip, name='Passport', bag=bag, category=docs)
+    PackingItem.objects.create(trip=trip, name='Belt', bag=bag, category=clothing)
+    (_heading, _bag, items), = _grouped_items(trip, 'bag')
+    assert [i.name for i in items] == ['Belt', 'Socks', 'Passport', 'Gum']
+
+
 def test_edit_item_changes_fields(auth_client, user, trip):
     item = PackingItem.objects.create(trip=trip, name='Socks', quantity=1)
     resp = auth_client.post(reverse('item_edit', args=[trip.pk, item.pk]), {

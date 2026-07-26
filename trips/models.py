@@ -2,6 +2,8 @@ from django.conf import settings
 from django.db import models
 from django.db.models import Q
 
+from catalog.models import SWATCHES, random_swatch
+
 
 class Trip(models.Model):
     """An event the user packs for (e.g. a trip)."""
@@ -77,6 +79,7 @@ class Bag(models.Model):
 
     trip = models.ForeignKey(Trip, on_delete=models.CASCADE, related_name='bags')
     name = models.CharField(max_length=80)
+    color = models.CharField(max_length=12, choices=SWATCHES, default=random_swatch)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

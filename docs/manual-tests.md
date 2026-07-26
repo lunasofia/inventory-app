@@ -164,7 +164,7 @@ Open the trip detail (planning) page as the owner.
 | 13.3 | Categories with no items on this trip | Show no heading |
 | 13.4 | Uncategorized items | Grouped under a single "Uncategorized" heading, shown **last** |
 | 13.5 | Reload the page | Items persist in the same groups/order |
-| 13.6 | Items within a group | Ordered by `sort_order` then name |
+| 13.6 | Items within a group | Ordered by category, then bag, then name (all case-insensitive); uncategorized/unbagged sort last within their tier |
 
 ## 14. Planning view — access control (Task 4)
 
@@ -441,6 +441,35 @@ when grouped by bag and its **category** when grouped by category.
   bag-mode, category in category-mode; hidden entirely in "all" mode.
 - Only the moved field is saved (`update_fields`); bag choices scoped to the
   trip, category choices to the **acting** user (mirrors `PackingItemForm`).
+
+## 24. Category & Bag colors + template-view category creation
+
+### Steps → Expected
+
+| Step | Expected |
+|------|----------|
+| Open /categories/ (or the trip planning panel) | Each category chip is rendered with its stored swatch color (e.g. Clothing = amber yellow, Toiletries = rose pink) |
+| Click the color-square (&#9632;) button on a category chip | A color picker inline replaces the chip, showing 12 colored dots |
+| Click a swatch dot in the picker | Chip immediately updates to the chosen color; change persists on reload |
+| Click Cancel in the picker | Chip restores to plain display with no change |
+| Open a trip's planning panel; click color-square on a bag chip | Bag color picker appears with 12 swatches |
+| Choose a new swatch for a bag | Bag chip updates to chosen color |
+| Create a new user; inspect their default categories | Clothing=amber, Electronics=terracotta, Documents=sage, Toiletries=rose, Health=coral, Misc=sand |
+| Create a new category from the /categories/ page | Chip renders with a random swatch from the 12-swatch palette |
+| Open a template detail page as owner | A "Categories" section appears below Items, showing the categories panel with colored chips and an add form |
+| Add a category from the template detail page | New category appears in the panel; `id="template-categories"` is used (not `id="categories"`) |
+| View a trip item in "By bag" mode | Item's category chip uses `swatch-<slug>` class (not old `cat-<name>` class) |
+| View exit page (final check) | Unpacked items show category chips with swatch colors |
+| Share a template as view-only; log in as view-only; try to add a category via the template panel | 404 — view-only users cannot add categories via the template param |
+| Try to set a bag color as a view-only trip share | 404 |
+
+### Resolved design decisions
+
+- **12-swatch palette:** amber, terracotta, sage, rose, coral, sand, sky, lavender, teal, lime, peach, slate. Swatches are defined as `SWATCHES` in `catalog/models.py` and shared with `trips/models.py` via import.
+- **Random default via callable:** `default=random_swatch` (a callable) means each newly created Category or Bag gets a random swatch without manual intervention.
+- **Seeded defaults keep mapped colors:** `seed_user_defaults` uses `DEFAULT_CATEGORY_COLORS` so the 6 standard categories always start with their brand-appropriate swatch (amber for Clothing etc.), not a random one.
+- **Picker on categories+bags everywhere:** `_category_chip.html` always shows the color picker button (no `can_edit` guard — the panel is already owner-scoped). Bag picker requires trip edit permission.
+- **Template panel mirrors trip panel:** `_categories_panel` accepts `template=` kwarg; `_categories.html` renders `id="template-categories"` when in template context; `category_add` / `category_rename` / `category_delete` all read `_opt_template` and route the re-render accordingly.
 
 ## 25. "Hide packed" filter
 

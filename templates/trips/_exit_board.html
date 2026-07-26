@@ -57,7 +57,7 @@
               </span>
             {% endif %}
             <span class="item-chips">
-              {% if item.category %}<span class="chip cat-{{ item.category.name|lower }}">{{ item.category.name }}</span>{% endif %}
+              {% if item.category %}<span class="chip swatch-{{ item.category.color }}">{{ item.category.name }}</span>{% endif %}
               {% if item.bag %}<span class="chip">{{ item.bag.name }}</span>{% endif %}
             </span>
           </li>

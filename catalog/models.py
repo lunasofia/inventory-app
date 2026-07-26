@@ -1,5 +1,38 @@
+import random
+
 from django.conf import settings
 from django.db import models
+
+SWATCHES = [
+    ('amber', 'Amber'),
+    ('terracotta', 'Terracotta'),
+    ('sage', 'Sage'),
+    ('rose', 'Rose'),
+    ('coral', 'Coral'),
+    ('sand', 'Sand'),
+    ('sky', 'Sky'),
+    ('lavender', 'Lavender'),
+    ('teal', 'Teal'),
+    ('lime', 'Lime'),
+    ('peach', 'Peach'),
+    ('slate', 'Slate'),
+]
+
+SWATCH_SLUGS = [s for s, _ in SWATCHES]
+
+
+def random_swatch():
+    return random.choice(SWATCH_SLUGS)
+
+
+DEFAULT_CATEGORY_COLORS = {
+    'Clothing': 'amber',
+    'Electronics': 'terracotta',
+    'Documents': 'sage',
+    'Toiletries': 'rose',
+    'Health': 'coral',
+    'Misc': 'sand',
+}
 
 DEFAULT_CATEGORIES = [
     'Clothing',
@@ -27,6 +60,7 @@ class Category(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='categories'
     )
     name = models.CharField(max_length=80)
+    color = models.CharField(max_length=12, choices=SWATCHES, default=random_swatch)
 
     class Meta:
         verbose_name_plural = 'categories'
@@ -97,7 +131,8 @@ class Item(models.Model):
 def seed_user_defaults(user):
     """Create the starter categories and conditions for a new user."""
     Category.objects.bulk_create(
-        [Category(owner=user, name=name) for name in DEFAULT_CATEGORIES],
+        [Category(owner=user, name=name, color=DEFAULT_CATEGORY_COLORS.get(name, random_swatch()))
+         for name in DEFAULT_CATEGORIES],
         ignore_conflicts=True,
     )
     Condition.objects.bulk_create(

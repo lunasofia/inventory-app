@@ -7,7 +7,7 @@
       <span class="item-label"><span class="item-qty">{{ item.quantity }}×</span> {{ item.name }}</span>
     </button>
     <span class="item-chips">
-      {% if group_mode != 'category' and item.category %}<span class="chip cat-{{ item.category.name|lower }}">{{ item.category.name }}</span>{% endif %}
+      {% if group_mode != 'category' and item.category %}<span class="chip swatch-{{ item.category.color }}">{{ item.category.name }}</span>{% endif %}
       {% if group_mode != 'bag' and item.bag %}<span class="chip">{{ item.bag.name }}</span>{% endif %}
     </span>
     <span class="item-actions">
@@ -31,7 +31,7 @@
       <span class="item-label"><span class="item-qty">{{ item.quantity }}×</span> {{ item.name }}</span>
     </span>
     <span class="item-chips">
-      {% if group_mode != 'category' and item.category %}<span class="chip cat-{{ item.category.name|lower }}">{{ item.category.name }}</span>{% endif %}
+      {% if group_mode != 'category' and item.category %}<span class="chip swatch-{{ item.category.color }}">{{ item.category.name }}</span>{% endif %}
       {% if group_mode != 'bag' and item.bag %}<span class="chip">{{ item.bag.name }}</span>{% endif %}
     </span>
   {% endif %}

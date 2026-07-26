@@ -24,6 +24,13 @@
   {% include 'trips/_template_items.html' %}
 </section>
 
+{% if can_edit %}
+<section>
+  <h2>Categories</h2>
+  {% include 'trips/_categories.html' %}
+</section>
+{% endif %}
+
 <section>
   <h2>Final-check reminders</h2>
   <p class="muted">These seed the "Final check" page for trips created from this template.</p>

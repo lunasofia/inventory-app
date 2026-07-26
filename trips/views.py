@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from catalog.models import Category, Condition, Item
+from catalog.models import Category, Condition, Item, SWATCH_SLUGS
 
 from accounts.models import User
 
@@ -101,17 +101,32 @@ def _get_trip_or_404(user, pk, *, require_edit=False):
     return trip, permission
 
 
+def _item_sort_key(item):
+    """Order items within a bucket by category, then bag, then name (all
+    case-insensitive). Uncategorized / unbagged sort last within their tier,
+    mirroring the catch-all-last convention used for group headings."""
+    return (
+        item.category is None, item.category.name.lower() if item.category else '',
+        item.bag is None, item.bag.name.lower() if item.bag else '',
+        item.name.lower(),
+    )
+
+
 def _grouped_items(trip, mode='category', hide_packed=False):
     """Items grouped for display as a list of (heading, bag_or_none, items).
 
     Named groups sort alphabetically; the catch-all ('Uncategorized' / 'Unbagged')
     comes last. In 'bag' mode the bag object is included so the template can show
-    bag-level controls; in 'category' mode the bag slot is None.
+    bag-level controls; in 'category' mode the bag slot is None. Items within each
+    bucket are sorted by category, then bag, then name (see _item_sort_key).
 
     When hide_packed=True, already-packed items are excluded before grouping, so
     groups that become empty are naturally omitted (the template skips empty groups).
     """
-    items = list(trip.items.select_related('category', 'condition', 'bag'))
+    items = sorted(
+        trip.items.select_related('category', 'condition', 'bag'),
+        key=_item_sort_key,
+    )
     if hide_packed:
         items = [i for i in items if not i.packed]
     if mode == 'all':
@@ -293,18 +308,25 @@ def _category_usage(category):
     )
 
 
-def _categories_panel(request, trip=None, cat_add_form=None):
+def _categories_panel(request, trip=None, cat_add_form=None, template=None):
     """Context for the reusable category-manager panel. `trip` present => the
     panel lives on the planning view and controls re-render the planning region."""
     cats = [
         {'cat': c, 'usage': _category_usage(c)}
         for c in Category.objects.filter(owner=request.user)
     ]
+    if template is not None:
+        cat_target = '#template-categories'
+    elif trip is not None:
+        cat_target = '#planning'
+    else:
+        cat_target = '#categories'
     return {
         'cats': cats,
         'cat_add_form': cat_add_form if cat_add_form is not None else CategoryForm(owner=request.user),
-        'cat_target': '#planning' if trip is not None else '#categories',
+        'cat_target': cat_target,
         'cat_trip': trip,
+        'cat_template': template,
     }
 
 
@@ -492,12 +514,14 @@ def template_list(request):
 def _template_context(request, template, add_form=None, can_edit=None):
     if can_edit is None:
         can_edit = template.can_edit(request.user)
-    return {
+    ctx = {
         'template': template,
         'items': template.items.select_related('category'),
         'add_form': add_form if add_form is not None else TemplateItemForm(owner=request.user),
         'can_edit': can_edit,
     }
+    ctx.update(_categories_panel(request, template=template))
+    return ctx
 
 
 @login_required
@@ -878,19 +902,37 @@ def _opt_trip(request):
     return _get_trip_or_404(request.user, tid, require_edit=True)
 
 
-def _category_chip_ctx(request, category, trip):
+def _category_chip_ctx(request, category, trip, template=None):
+    if template is not None:
+        cat_target = '#template-categories'
+    elif trip is not None:
+        cat_target = '#planning'
+    else:
+        cat_target = '#categories'
     return {
         'cat': category,
         'usage': _category_usage(category),
-        'cat_target': '#planning' if trip is not None else '#categories',
+        'cat_target': cat_target,
         'cat_trip': trip,
+        'cat_template': template,
     }
 
 
-def _render_after_category(request, trip, cat_add_form=None):
+def _opt_template(request):
+    """Optional template context for category endpoints."""
+    tid = request.POST.get('template') or request.GET.get('template')
+    if not tid:
+        return None, None
+    return _get_template_or_404(request.user, tid, require_edit=True)
+
+
+def _render_after_category(request, trip, template=None, cat_add_form=None):
     if trip is not None:
         return _render_planning(request, trip, trip.permission_for(request.user),
                                 cat_add_form=cat_add_form)
+    if template is not None:
+        return render(request, 'trips/_categories.html',
+                      _categories_panel(request, None, cat_add_form, template=template))
     return render(request, 'trips/_categories.html',
                   _categories_panel(request, None, cat_add_form))
 
@@ -904,29 +946,31 @@ def category_manage(request):
 @require_POST
 def category_add(request):
     trip, _ = _opt_trip(request)
+    template, _ = _opt_template(request)
     form = CategoryForm(request.POST, owner=request.user)
     if form.is_valid():
         name = form.cleaned_data['name']
         # Reuse an existing same-name category (case-insensitive) instead of duplicating.
         if not Category.objects.filter(owner=request.user, name__iexact=name).exists():
             Category.objects.create(owner=request.user, name=name)
-        return _render_after_category(request, trip)
-    return _render_after_category(request, trip, cat_add_form=form)
+        return _render_after_category(request, trip, template)
+    return _render_after_category(request, trip, template, cat_add_form=form)
 
 
 @login_required
 def category_rename(request, pk):
     trip, _ = _opt_trip(request)
+    template, _ = _opt_template(request)
     category = get_object_or_404(Category, pk=pk, owner=request.user)
     if request.method == 'POST':
         form = CategoryForm(request.POST, instance=category, owner=request.user)
         if form.is_valid():
             form.save()
-            return _render_after_category(request, trip)
-        ctx = _category_chip_ctx(request, category, trip)
+            return _render_after_category(request, trip, template)
+        ctx = _category_chip_ctx(request, category, trip, template)
         ctx['form'] = form
         return render(request, 'trips/_category_edit_chip.html', ctx)
-    ctx = _category_chip_ctx(request, category, trip)
+    ctx = _category_chip_ctx(request, category, trip, template)
     ctx['form'] = CategoryForm(instance=category, owner=request.user)
     return render(request, 'trips/_category_edit_chip.html', ctx)
 
@@ -935,17 +979,54 @@ def category_rename(request, pk):
 def category_chip(request, pk):
     """Display chip (used to cancel an inline rename)."""
     trip, _ = _opt_trip(request)
+    template, _ = _opt_template(request)
     category = get_object_or_404(Category, pk=pk, owner=request.user)
-    return render(request, 'trips/_category_chip.html', _category_chip_ctx(request, category, trip))
+    return render(request, 'trips/_category_chip.html', _category_chip_ctx(request, category, trip, template))
 
 
 @login_required
 @require_POST
 def category_delete(request, pk):
     trip, _ = _opt_trip(request)
+    template, _ = _opt_template(request)
     category = get_object_or_404(Category, pk=pk, owner=request.user)
     category.delete()  # FKs are SET_NULL -> items everywhere become Uncategorized
-    return _render_after_category(request, trip)
+    return _render_after_category(request, trip, template)
+
+
+@login_required
+def category_set_color(request, pk):
+    """GET: show color picker. POST: save chosen color, return chip."""
+    trip, _ = _opt_trip(request)
+    template, _ = _opt_template(request)
+    category = get_object_or_404(Category, pk=pk, owner=request.user)
+    if request.method == 'POST':
+        color = request.POST.get('color', '')
+        if color in SWATCH_SLUGS:
+            category.color = color
+            category.save(update_fields=['color'])
+        return render(request, 'trips/_category_chip.html',
+                      _category_chip_ctx(request, category, trip, template))
+    ctx = _category_chip_ctx(request, category, trip, template)
+    ctx['swatches'] = SWATCH_SLUGS
+    return render(request, 'trips/_category_color_picker.html', ctx)
+
+
+@login_required
+def bag_set_color(request, pk, bag_pk):
+    """GET: show color picker. POST: save chosen color, return chip."""
+    trip, permission = _get_trip_or_404(request.user, pk, require_edit=True)
+    bag = get_object_or_404(Bag, pk=bag_pk, trip=trip)
+    if request.method == 'POST':
+        color = request.POST.get('color', '')
+        if color in SWATCH_SLUGS:
+            bag.color = color
+            bag.save(update_fields=['color'])
+        return render(request, 'trips/_bag_chip.html',
+                      {'trip': trip, 'bag': bag, 'can_edit': permission in ('owner', 'edit')})
+    return render(request, 'trips/_bag_color_picker.html',
+                  {'trip': trip, 'bag': bag, 'swatches': SWATCH_SLUGS,
+                   'can_edit': permission in ('owner', 'edit')})
 
 
 @login_required

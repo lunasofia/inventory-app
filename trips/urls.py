@@ -18,8 +18,9 @@ urlpatterns = [
     path('trips/<int:pk>/items/<int:item_pk>/move/', views.item_move, name='item_move'),
     path('trips/<int:pk>/items/<int:item_pk>/delete/', views.item_delete, name='item_delete'),
     path('trips/<int:pk>/items/<int:item_pk>/toggle/', views.item_toggle, name='item_toggle'),
-    # Grouping lens + bags (HTMX)
+    # Grouping lens + hide-packed filter + bags (HTMX)
     path('trips/<int:pk>/group/', views.set_group, name='set_group'),
+    path('trips/<int:pk>/hide-packed/', views.set_hide_packed, name='set_hide_packed'),
     path('trips/<int:pk>/bags/add/', views.bag_create, name='bag_create'),
     path('trips/<int:pk>/bags/<int:bag_pk>/', views.bag_chip, name='bag_chip'),
     path('trips/<int:pk>/bags/<int:bag_pk>/edit/', views.bag_edit, name='bag_edit'),

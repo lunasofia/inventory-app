@@ -442,6 +442,26 @@ when grouped by bag and its **category** when grouped by category.
 - Only the moved field is saved (`update_fields`); bag choices scoped to the
   trip, category choices to the **acting** user (mirrors `PackingItemForm`).
 
+## 25. "Hide packed" filter
+
+| # | Steps | Expected |
+|---|-------|----------|
+| 25.1 | Open a trip with a mix of packed and unpacked items; click **Hide packed** | Packed items disappear from all groups; button becomes highlighted (active) |
+| 25.2 | While Hide packed is on, unpack an item (click its checkbox) | The item reappears; the filter stays active |
+| 25.3 | While Hide packed is on, check off an unpacked item | The newly-packed item disappears from the list immediately |
+| 25.4 | While Hide packed is on, switch group lens (By bag / By category / All items) | Items remain filtered across all lenses; button stays highlighted |
+| 25.5 | While Hide packed is on, a group whose only items are all packed | The entire group heading disappears (empty group is not rendered) |
+| 25.6 | Click **Hide packed** again (toggle off) | Packed items reappear; button returns to its inactive style |
+| 25.7 | With Hide packed on, navigate away and return to the trip (full page load) | Filter resets to **off**; all items show — mirrors the group lens reset |
+| 25.8 | With Hide packed on, all items are packed | Board shows no groups / empty-state message; "All packed" progress banner still appears at top |
+| 25.9 | Render/smoke check | "Hide packed" button renders with ASCII quotes and valid HTMX attributes (`hx-target="#planning"`); no smart quotes |
+
+## Design decision: "Hide packed" filter state
+
+- State kept in session per trip (`session['hide_packed_{trip.pk}']`), **same as the group lens**.
+- **Resets to off on every full page load** of the trip detail view — consistent with group lens behavior; user starts each visit with a full view of their list.
+- The toggle is a GET endpoint (`set_hide_packed`) that flips the session bool and returns the re-rendered `#planning` fragment — no separate JS needed.
+
 ## Coverage notes
 
 - **Covered through Task #6 + category management:** auth, profiles, dashboard,

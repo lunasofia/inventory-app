@@ -189,11 +189,20 @@ label { display: block; font-weight: 500; margin-bottom: 0.25rem; font-size: 0.9
 .item-actions { display: flex; align-items: center; gap: 0.25rem; opacity: 0.55; }
 .item-actions:hover, .item:hover .item-actions { opacity: 1; }
 .chip { font-size: 0.68rem; padding: 0.1rem 0.45rem; border-radius: 999px; background: var(--muted-surface); color: var(--muted); white-space: nowrap; }
-.chip.cat-clothing { background: #fef3c7; color: #92400e; }
-.chip.cat-electronics { background: #fde8d0; color: #7c3a1a; }
-.chip.cat-documents { background: #dcfce7; color: #166534; }
-.chip.cat-toiletries { background: #fce7f3; color: #831843; }
-.chip.cat-health { background: #fde2e2; color: #9a3b3b; }
+.chip.swatch-amber, .bag-chip.swatch-amber, .color-dot.swatch-amber { background: #fef3c7; color: #92400e; }
+.chip.swatch-terracotta, .bag-chip.swatch-terracotta, .color-dot.swatch-terracotta { background: #fde8d0; color: #7c3a1a; }
+.chip.swatch-sage, .bag-chip.swatch-sage, .color-dot.swatch-sage { background: #dcfce7; color: #166534; }
+.chip.swatch-rose, .bag-chip.swatch-rose, .color-dot.swatch-rose { background: #fce7f3; color: #831843; }
+.chip.swatch-coral, .bag-chip.swatch-coral, .color-dot.swatch-coral { background: #fde2e2; color: #9a3b3b; }
+.chip.swatch-sand, .bag-chip.swatch-sand, .color-dot.swatch-sand { background: #f0e8d5; color: #8a825e; }
+.chip.swatch-sky, .bag-chip.swatch-sky, .color-dot.swatch-sky { background: #dbeafe; color: #1e40af; }
+.chip.swatch-lavender, .bag-chip.swatch-lavender, .color-dot.swatch-lavender { background: #ede9fe; color: #5b21b6; }
+.chip.swatch-teal, .bag-chip.swatch-teal, .color-dot.swatch-teal { background: #ccfbf1; color: #115e59; }
+.chip.swatch-lime, .bag-chip.swatch-lime, .color-dot.swatch-lime { background: #ecfccb; color: #3f6212; }
+.chip.swatch-peach, .bag-chip.swatch-peach, .color-dot.swatch-peach { background: #ffedd5; color: #9a3412; }
+.chip.swatch-slate, .bag-chip.swatch-slate, .color-dot.swatch-slate { background: #e2e8f0; color: #334155; }
+.color-dot { appearance: none; -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
+.color-dot:hover { border-color: var(--ink); }
 
 /* inline edit row */
 .item-edit-form { display: flex; gap: 0.4rem; align-items: center; flex: 1; flex-wrap: wrap; padding: 0.3rem 0; }

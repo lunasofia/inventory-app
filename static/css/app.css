@@ -201,7 +201,7 @@ label { display: block; font-weight: 500; margin-bottom: 0.25rem; font-size: 0.9
 .chip.swatch-lime, .bag-chip.swatch-lime, .color-dot.swatch-lime { background: #ecfccb; color: #3f6212; }
 .chip.swatch-peach, .bag-chip.swatch-peach, .color-dot.swatch-peach { background: #ffedd5; color: #9a3412; }
 .chip.swatch-slate, .bag-chip.swatch-slate, .color-dot.swatch-slate { background: #e2e8f0; color: #334155; }
-.color-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
+.color-dot { appearance: none; -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
 .color-dot:hover { border-color: var(--ink); }
 
 /* inline edit row */

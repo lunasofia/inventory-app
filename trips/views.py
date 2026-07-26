@@ -164,30 +164,55 @@ def trip_create(request):
         if form.is_valid():
             trip = form.save(commit=False)
             trip.owner = request.user
-            template = form.cleaned_data.get('start_from_template')
-            if template is not None:
-                trip.origin_template = template
+            selected_templates = list(form.cleaned_data.get('start_from_template') or [])
+            if len(selected_templates) == 1:
+                trip.origin_template = selected_templates[0]
             trip.save()
-            if template is not None:
-                _clone_template_into_trip(template, trip)
-            messages.success(request, f'Created "{trip.name}".')
+            total_added = 0
+            for tpl in selected_templates:
+                added, _ = _clone_template_into_trip(tpl, trip)
+                total_added += added
+            if selected_templates:
+                n = total_added
+                m = len(selected_templates)
+                items_word = 'item' if n == 1 else 'items'
+                tpls_word = 'template' if m == 1 else 'templates'
+                messages.success(request, f'Created "{trip.name}" with {n} {items_word} from {m} {tpls_word}.')
+            else:
+                messages.success(request, f'Created "{trip.name}".')
             return redirect('trip_detail', pk=trip.pk)
     else:
         form = TripForm(owner=request.user, show_template=True)
     return render(request, 'trips/trip_form.html', {'form': form, 'mode': 'create'})
 
 
-def _clone_template_into_trip(template, trip):
-    """Copy a template's items into a new trip's packing list (catalog-linked,
-    usage not bumped)."""
+def _clone_template_into_trip(template, trip, *, skip_existing=True):
+    """Copy a template's items into a trip's packing list (catalog-linked, usage not bumped).
+
+    Returns (added_count, skipped_count). When skip_existing is True, items whose
+    name (case-insensitive) already exists on the trip are skipped; intra-batch
+    duplicates within the same call are also skipped.
+    """
     default_cond = Condition.objects.filter(owner=trip.owner, is_default=True).first()
+    seen = {n.lower() for n in trip.items.values_list('name', flat=True)}
+    next_order = (trip.items.aggregate(m=Max('sort_order'))['m'] or 0) + 1
+    added = 0
+    skipped = 0
     for ti in template.items.all().order_by('sort_order', 'name'):
+        key = ti.name.lower()
+        if skip_existing and key in seen:
+            skipped += 1
+            continue
         category = _resolve_owner_category(trip.owner, ti.category)
         PackingItem.objects.create(
             trip=trip, name=ti.name, category=category, quantity=ti.quantity,
-            sort_order=ti.sort_order, condition=default_cond,
+            sort_order=next_order, condition=default_cond,
             catalog_item=_link_catalog_no_bump(trip.owner, ti.name, category),
         )
+        seen.add(key)
+        next_order += 1
+        added += 1
+    return added, skipped
 
 
 @login_required
@@ -196,9 +221,26 @@ def trip_detail(request, pk):
     # Default the view lens to "by bag" on each full page load.
     request.session[f'group_mode_{trip.pk}'] = 'bag'
     context = _planning_context(request, trip, permission)
+    context['add_template_options'] = Template.accessible_by(request.user)
     if permission == 'owner':
         context.update(_share_context(request, trip))
     return render(request, 'trips/trip_detail.html', context)
+
+
+@login_required
+@require_POST
+def trip_add_template(request, pk):
+    trip, permission = _get_trip_or_404(request.user, pk, require_edit=True)
+    template_id = request.POST.get('template')
+    template = get_object_or_404(Template.accessible_by(request.user), pk=template_id)
+    added, skipped = _clone_template_into_trip(template, trip)
+    if added == 0 and skipped == 0:
+        messages.info(request, f'"{template.name}" has no items to add.')
+    elif skipped:
+        messages.success(request, f'Added {added} item{"" if added == 1 else "s"} from "{template.name}" ({skipped} skipped as duplicate{"" if skipped == 1 else "s"}).')
+    else:
+        messages.success(request, f'Added {added} item{"" if added == 1 else "s"} from "{template.name}".')
+    return _render_planning(request, trip, permission)
 
 
 @login_required

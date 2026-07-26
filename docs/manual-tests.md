@@ -386,14 +386,42 @@ typing items one at a time.
   imports mirror normal add-item (catalog `_remember_item` + default condition).
 - Uploads are plain full-page POSTs (not HTMX) — simpler for file inputs.
 
+## 22. Add from template (compose multiple templates)
+
+Build one packing list from several templates — at creation and afterward.
+
+| # | Steps | Expected |
+|---|-------|----------|
+| 22.1 | Trip → new, "Start from templates" multi-select, pick two | Trip created with the **union** of both templates' items; overlapping names not duplicated |
+| 22.2 | Create from exactly one template | `origin_template` set (diff/drift flow still offered) |
+| 22.3 | Create from two or more templates | `origin_template` left null |
+| 22.4 | Trip detail (edit rights) → "Add from template", choose a template | Its items append after the current list; dedup by name; `Added N items… (M skipped)` |
+| 22.5 | Add the same template again | All items skipped as duplicates |
+| 22.6 | Add an empty template | `"<template>" has no items to add.`; nothing created |
+| 22.7 | View-only collaborator / inaccessible template | 404 |
+| 22.8 | Any add-from-template | Items catalog-linked (usage **not** bumped) + default condition set |
+
+## Resolved design decisions (Add from template)
+
+- **Both entry points**: multi-select at creation + a repeatable "Add from
+  template" modal (mirrors the Add-item modal) on the trip planning header.
+- **Skip duplicates by name** (case-insensitive) against items already on the
+  trip; dedup also accumulates across a multi-template batch.
+- Cloning reuses the single-template semantics (`_clone_template_into_trip`,
+  now returning `(added, skipped)`): catalog-linked without bumping usage,
+  default condition, owner-resolved categories, appended `sort_order`.
+- `origin_template` set only when exactly one template seeds a new trip;
+  add-from-template on an existing trip never changes it.
+
 ## Coverage notes
 
 - **Covered through Task #6 + category management:** auth, profiles, dashboard,
   trip CRUD, the packing-list planning view, bags/containers, check-off packing
   mode, templates/reuse (incl. the diff/drift flow), and category add/rename/delete.
 - **Also covered:** category management, the Packwell UI overhaul (sidebar +
-  unified trip board), **sharing** (Task #8, incl. recent collaborators), and
-  **CSV import** (templates + packing lists).
+  unified trip board), **sharing** (Task #8, incl. recent collaborators),
+  **CSV import** (templates + packing lists), and **add-from-template**
+  (compose multiple templates into one list).
 - **Not yet covered (future tasks):** unpacking mode (Task 7); people (#14);
   buy-when-there (#15); category-level marking (#16). Deferred: bag
   (re)assignment during packing; templates capturing bags; sharing

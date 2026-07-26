@@ -8,6 +8,8 @@ urlpatterns = [
     path('trips/<int:pk>/', views.trip_detail, name='trip_detail'),
     path('trips/<int:pk>/edit/', views.trip_edit, name='trip_edit'),
     path('trips/<int:pk>/delete/', views.trip_delete, name='trip_delete'),
+    # Add from template (HTMX)
+    path('trips/<int:pk>/add-template/', views.trip_add_template, name='trip_add_template'),
     # Packing-list items (HTMX)
     path('trips/<int:pk>/items/add/', views.item_add, name='item_add'),
     path('trips/<int:pk>/items/suggest/', views.item_suggest, name='item_suggest'),

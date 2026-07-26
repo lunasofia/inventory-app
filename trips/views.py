@@ -83,6 +83,13 @@ def _group_mode(request, trip):
     return mode if mode in ('category', 'bag', 'all') else 'bag'
 
 
+def _hide_packed(request, trip):
+    """Whether the 'hide packed' filter is active for this trip (bool, default
+    False). Kept in session during a visit; trip_detail resets it to False on
+    each full page load — mirrors the group-mode pattern."""
+    return bool(request.session.get(f'hide_packed_{trip.pk}', False))
+
+
 def _get_trip_or_404(user, pk, *, require_edit=False):
     """Fetch a trip the user may access, or 404. Optionally require edit rights."""
     trip = get_object_or_404(Trip, pk=pk)
@@ -105,17 +112,23 @@ def _item_sort_key(item):
     )
 
 
-def _grouped_items(trip, mode='category'):
+def _grouped_items(trip, mode='category', hide_packed=False):
     """Items grouped for display as a list of (heading, bag_or_none, items).
 
     Named groups sort alphabetically; the catch-all ('Uncategorized' / 'Unbagged')
     comes last. In 'bag' mode the bag object is included so the template can show
     bag-level controls; in 'category' mode the bag slot is None. Items within each
-    bucket are sorted by category, then bag, then name (see _item_sort_key)."""
+    bucket are sorted by category, then bag, then name (see _item_sort_key).
+
+    When hide_packed=True, already-packed items are excluded before grouping, so
+    groups that become empty are naturally omitted (the template skips empty groups).
+    """
     items = sorted(
         trip.items.select_related('category', 'condition', 'bag'),
         key=_item_sort_key,
     )
+    if hide_packed:
+        items = [i for i in items if not i.packed]
     if mode == 'all':
         unpacked = [i for i in items if not i.packed]
         packed = [i for i in items if i.packed]
@@ -234,6 +247,8 @@ def trip_detail(request, pk):
     trip, permission = _get_trip_or_404(request.user, pk)
     # Default the view lens to "by bag" on each full page load.
     request.session[f'group_mode_{trip.pk}'] = 'bag'
+    # Reset the hide-packed filter to off on each full page load.
+    request.session[f'hide_packed_{trip.pk}'] = False
     context = _planning_context(request, trip, permission)
     context['add_template_options'] = Template.accessible_by(request.user)
     if permission == 'owner':
@@ -317,12 +332,14 @@ def _categories_panel(request, trip=None, cat_add_form=None, template=None):
 
 def _planning_context(request, trip, permission, add_form=None, bag_form=None, cat_add_form=None):
     mode = _group_mode(request, trip)
+    hide_packed = _hide_packed(request, trip)
     context = {
         'trip': trip,
         'permission': permission,
         'can_edit': permission in ('owner', 'edit'),
         'group_mode': mode,
-        'groups': _grouped_items(trip, mode),
+        'hide_packed': hide_packed,
+        'groups': _grouped_items(trip, mode, hide_packed=hide_packed),
         'bags': trip.bags.all(),
         'unbagged_count': trip.items.filter(bag__isnull=True).count(),
         'add_form': add_form if add_form is not None
@@ -346,6 +363,15 @@ def set_group(request, pk):
     trip, permission = _get_trip_or_404(request.user, pk)
     mode = request.GET.get('mode', 'bag')
     request.session[f'group_mode_{trip.pk}'] = mode if mode in ('category', 'bag', 'all') else 'bag'
+    return _render_planning(request, trip, permission)
+
+
+@login_required
+def set_hide_packed(request, pk):
+    """Toggle the 'hide packed' filter for the current visit."""
+    trip, permission = _get_trip_or_404(request.user, pk)
+    on = request.GET.get('on', '0')
+    request.session[f'hide_packed_{trip.pk}'] = (on == '1')
     return _render_planning(request, trip, permission)
 
 

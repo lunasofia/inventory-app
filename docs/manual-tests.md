@@ -164,7 +164,7 @@ Open the trip detail (planning) page as the owner.
 | 13.3 | Categories with no items on this trip | Show no heading |
 | 13.4 | Uncategorized items | Grouped under a single "Uncategorized" heading, shown **last** |
 | 13.5 | Reload the page | Items persist in the same groups/order |
-| 13.6 | Items within a group | Ordered by `sort_order` then name |
+| 13.6 | Items within a group | Ordered by category, then bag, then name (all case-insensitive); uncategorized/unbagged sort last within their tier |
 
 ## 14. Planning view — access control (Task 4)
 

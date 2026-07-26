@@ -94,14 +94,28 @@ def _get_trip_or_404(user, pk, *, require_edit=False):
     return trip, permission
 
 
+def _item_sort_key(item):
+    """Order items within a bucket by category, then bag, then name (all
+    case-insensitive). Uncategorized / unbagged sort last within their tier,
+    mirroring the catch-all-last convention used for group headings."""
+    return (
+        item.category is None, item.category.name.lower() if item.category else '',
+        item.bag is None, item.bag.name.lower() if item.bag else '',
+        item.name.lower(),
+    )
+
+
 def _grouped_items(trip, mode='category'):
     """Items grouped for display as a list of (heading, bag_or_none, items).
 
     Named groups sort alphabetically; the catch-all ('Uncategorized' / 'Unbagged')
     comes last. In 'bag' mode the bag object is included so the template can show
-    bag-level controls; in 'category' mode the bag slot is None.
-    """
-    items = list(trip.items.select_related('category', 'condition', 'bag'))
+    bag-level controls; in 'category' mode the bag slot is None. Items within each
+    bucket are sorted by category, then bag, then name (see _item_sort_key)."""
+    items = sorted(
+        trip.items.select_related('category', 'condition', 'bag'),
+        key=_item_sort_key,
+    )
     if mode == 'all':
         unpacked = [i for i in items if not i.packed]
         packed = [i for i in items if i.packed]

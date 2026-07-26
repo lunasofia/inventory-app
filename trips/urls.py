@@ -68,4 +68,7 @@ urlpatterns = [
     path('categories/<int:pk>/', views.category_chip, name='category_chip'),
     path('categories/<int:pk>/rename/', views.category_rename, name='category_rename'),
     path('categories/<int:pk>/delete/', views.category_delete, name='category_delete'),
+    path('categories/<int:pk>/color/', views.category_set_color, name='category_set_color'),
+    # Bag color picker
+    path('trips/<int:pk>/bags/<int:bag_pk>/color/', views.bag_set_color, name='bag_set_color'),
 ]

@@ -1,0 +1,12 @@
+<span class="bag-chip swatch-picker" id="bag-chip-{{ bag.pk }}">
+  <span class="bag-chip-name">{{ bag.name }}</span>
+  {% for swatch in swatches %}
+  <button class="color-dot swatch-{{ swatch }}" type="button" title="{{ swatch }}"
+          hx-post="{% url 'bag_set_color' trip.pk bag.pk %}"
+          hx-vals='{"color": "{{ swatch }}"}'
+          hx-target="#bag-chip-{{ bag.pk }}" hx-swap="outerHTML"></button>
+  {% endfor %}
+  <button class="linkbtn" type="button" title="Cancel"
+          hx-get="{% url 'bag_chip' trip.pk bag.pk %}"
+          hx-target="#bag-chip-{{ bag.pk }}" hx-swap="outerHTML">Cancel</button>
+</span>

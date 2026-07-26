@@ -413,6 +413,35 @@ Build one packing list from several templates — at creation and afterward.
 - `origin_template` set only when exactly one template seeds a new trip;
   add-from-template on an existing trip never changes it.
 
+## 23. Quick move (reassign bag / category from the row)
+
+A per-row **move** button (⇄) next to edit/delete that reassigns an item without
+opening the full edit form. It is **context-aware**: it moves the item's **bag**
+when grouped by bag and its **category** when grouped by category.
+
+| # | Steps | Expected |
+|---|-------|----------|
+| 23.1 | Group "By bag", click ⇄ on an item, pick another bag | Row swaps to a single bag dropdown; on selecting, item reflows into the chosen bag's group; board re-renders |
+| 23.2 | In the move dropdown, pick the blank option | Item becomes **Unbagged** and lands in the "Unbagged" group (shown last) |
+| 23.3 | Group "By category", click ⇄, pick another category | Moves the item's **category**; item reflows to that category group |
+| 23.4 | In category-mode move, pick the blank option | Item becomes **Uncategorized** (group shown last) |
+| 23.5 | Group "All items", look at each row | **No ⇄ button** (move is meaningless without a bag/category lens) |
+| 23.6 | Click ⇄ then "Cancel" | Row reverts to its display state (via `item_row`); no change saved |
+| 23.7 | View-only shared user | No ⇄ button; a direct POST to the move endpoint → 404 |
+| 23.8 | Move preserves other fields | Name, quantity, packed state, condition, notes unchanged after a move |
+| 23.9 | Render/smoke check | The move row + ⇄ button render with **ASCII quotes** and valid HTMX attributes; existing edit/delete markup intact |
+
+## Resolved design decisions (Quick move)
+
+- The ⇄ button reuses the **edit swap mechanic** (`hx-get` swaps just that row;
+  Cancel restores via `item_row`) but swaps into a **single-dropdown move row**
+  that **auto-submits on change** (`hx-trigger="change"`) — two interactions vs.
+  the four the full edit form takes.
+- **Target field derives from the current group lens** (`_group_mode`): bag in
+  bag-mode, category in category-mode; hidden entirely in "all" mode.
+- Only the moved field is saved (`update_fields`); bag choices scoped to the
+  trip, category choices to the **acting** user (mirrors `PackingItemForm`).
+
 ## Coverage notes
 
 - **Covered through Task #6 + category management:** auth, profiles, dashboard,

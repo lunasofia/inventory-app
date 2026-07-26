@@ -11,6 +11,12 @@
       {% if group_mode != 'bag' and item.bag %}<span class="chip">{{ item.bag.name }}</span>{% endif %}
     </span>
     <span class="item-actions">
+      {% if group_mode != 'all' %}
+      <button class="linkbtn" type="button"
+              title="Move to another {% if group_mode == 'bag' %}bag{% else %}category{% endif %}"
+              hx-get="{% url 'item_move' item.trip_id item.pk %}"
+              hx-target="#item-{{ item.pk }}" hx-swap="outerHTML">⇄</button>
+      {% endif %}
       <button class="linkbtn" type="button" title="Edit"
               hx-get="{% url 'item_edit' item.trip_id item.pk %}"
               hx-target="#item-{{ item.pk }}" hx-swap="outerHTML">✎</button>

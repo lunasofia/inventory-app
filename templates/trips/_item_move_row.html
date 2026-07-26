@@ -1,0 +1,16 @@
+<li class="item moving" id="item-{{ item.pk }}">
+  <span class="item-label"><span class="item-qty">{{ item.quantity }}×</span> {{ item.name }}</span>
+  <form class="item-move-form">
+    <select name="{{ mode }}" autofocus
+            hx-post="{% url 'item_move' trip.pk item.pk %}"
+            hx-trigger="change" hx-target="#planning" hx-swap="outerHTML">
+      <option value="">{% if mode == 'bag' %}Unbagged{% else %}Uncategorized{% endif %}</option>
+      {% for t in targets %}
+        <option value="{{ t.pk }}"{% if mode == 'bag' and item.bag_id == t.pk %} selected{% elif mode == 'category' and item.category_id == t.pk %} selected{% endif %}>{{ t.name }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn" type="button"
+            hx-get="{% url 'item_row' trip.pk item.pk %}"
+            hx-target="#item-{{ item.pk }}" hx-swap="outerHTML">Cancel</button>
+  </form>
+</li>

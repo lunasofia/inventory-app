@@ -1,0 +1,13 @@
+{# Overall progress block. Pass oob=True to swap it out-of-band (item toggle). #}
+<div id="planning-progress"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <div class="progress-head">
+    <span class="label">Overall progress</span>
+    <span class="mono">{{ trip.packed_count }}/{{ trip.total_count }}</span>
+  </div>
+  <div class="progress-track"><span style="width: {{ trip.progress_pct }}%"></span></div>
+  {% if trip.total_count and trip.packed_count == trip.total_count %}
+    <p class="all-packed">✓ All packed — you're good to go!</p>
+  {% else %}
+    <p class="progress-note">{{ trip.progress_pct }}% packed</p>
+  {% endif %}
+</div>

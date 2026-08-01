@@ -1,0 +1,20 @@
+{% comment %}
+Bag summary strip. Pass oob=True to swap it out-of-band (item toggle). The
+wrapper always renders (empty when there are no bags) so an OOB swap can always
+find #bag-strip to replace.
+{% endcomment %}
+<div id="bag-strip"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% if bags or unbagged_count %}
+    <div class="bag-strip">
+      {% for bag in bags %}
+        <span class="bag-strip-chip">
+          🧳 {{ bag.name }} <span class="count mono">{{ bag.packed_count }}/{{ bag.total_count }}</span>
+          {% if bag.is_packed %}<span class="badge-packed">✓</span>{% endif %}
+        </span>
+      {% endfor %}
+      {% if unbagged_count %}
+        <span class="bag-strip-chip dashed">✕ {{ unbagged_count }} unbagged</span>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>

@@ -1,29 +1,8 @@
 <div id="planning">
-  <div class="progress-head">
-    <span class="label">Overall progress</span>
-    <span class="mono">{{ trip.packed_count }}/{{ trip.total_count }}</span>
-  </div>
-  <div class="progress-track"><span style="width: {{ trip.progress_pct }}%"></span></div>
-  {% if trip.total_count and trip.packed_count == trip.total_count %}
-    <p class="all-packed">✓ All packed — you're good to go!</p>
-  {% else %}
-    <p class="progress-note">{{ trip.progress_pct }}% packed</p>
-  {% endif %}
+  {% include 'trips/_progress.html' %}
 
   {# bag summary strip #}
-  {% if bags or unbagged_count %}
-    <div class="bag-strip">
-      {% for bag in bags %}
-        <span class="bag-strip-chip">
-          🧳 {{ bag.name }} <span class="count mono">{{ bag.packed_count }}/{{ bag.total_count }}</span>
-          {% if bag.is_packed %}<span class="badge-packed">✓</span>{% endif %}
-        </span>
-      {% endfor %}
-      {% if unbagged_count %}
-        <span class="bag-strip-chip dashed">✕ {{ unbagged_count }} unbagged</span>
-      {% endif %}
-    </div>
-  {% endif %}
+  {% include 'trips/_bag_strip.html' %}
 
   {# view toggle #}
   <div class="board-controls">

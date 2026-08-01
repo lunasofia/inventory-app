@@ -1,0 +1,8 @@
+{% comment %}
+Response for a single item toggle (hide-packed OFF). The row is swapped into
+#item-{{ item.pk }}; progress and the bag strip are updated out-of-band so the
+rest of the board — and the scroll position — stays put.
+{% endcomment %}
+{% include 'trips/_item_row.html' %}
+{% include 'trips/_progress.html' with oob=True %}
+{% include 'trips/_bag_strip.html' with oob=True %}

@@ -2,7 +2,7 @@
   {% if can_edit %}
     <button class="item-toggle" type="button"
             hx-post="{% url 'item_toggle' item.trip_id item.pk %}"
-            hx-target="#planning" hx-swap="outerHTML">
+            hx-target="#item-{{ item.pk }}" hx-swap="outerHTML">
       <span class="checkbox">✓</span>
       <span class="item-label"><span class="item-qty">{{ item.quantity }}×</span> {{ item.name }}</span>
     </button>

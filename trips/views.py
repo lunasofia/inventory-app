@@ -1084,7 +1084,15 @@ def item_toggle(request, pk, item_pk):
     item = get_object_or_404(PackingItem, pk=item_pk, trip=trip)
     item.packed = not item.packed
     item.save(update_fields=['packed'])
-    return _render_planning(request, trip, permission)
+    # When "hide packed" is on, packing an item removes it from the list and
+    # re-flows the groups, so fall back to a full re-render. Otherwise swap only
+    # the row (plus progress/bag-strip out-of-band) so the scroll position and
+    # the rest of the board stay put instead of jumping.
+    if _hide_packed(request, trip):
+        return _render_planning(request, trip, permission)
+    context = _planning_context(request, trip, permission)
+    context['item'] = item
+    return render(request, 'trips/_item_toggle.html', context)
 
 
 @login_required
